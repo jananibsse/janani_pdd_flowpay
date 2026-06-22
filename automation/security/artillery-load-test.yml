@@ -1,0 +1,84 @@
+config:
+  target: "https://jananibsse.github.io/janani_pdd_flowpay/"
+  phases:
+    # Baseline Load Test — 100 users × 1 minute
+    - duration: 60
+      arrivalRate: 100
+      name: "Baseline Load Test (100 users)"
+  # Uncomment for stress test:
+  # phases:
+  #   - duration: 120
+  #     arrivalRate: 200
+  #     name: "Stress Test (200 users)"
+  #   - duration: 120
+  #     arrivalRate: 500
+  #     name: "High Stress Test (500 users)"
+  #   - duration: 120
+  #     arrivalRate: 1000
+  #     name: "Peak Stress (1000 users)"
+  # Uncomment for spike test:
+  # phases:
+  #   - duration: 30
+  #     arrivalRate: 50
+  #     name: "Warm Up"
+  #   - duration: 10
+  #     arrivalRate: 500
+  #     name: "Spike"
+  #   - duration: 180
+  #     arrivalRate: 500
+  #     name: "Hold Spike"
+  #   - duration: 30
+  #     arrivalRate: 0
+  #     name: "Cool Down"
+  plugins:
+    expect: {}
+  defaults:
+    headers:
+      User-Agent: "Artillery/FlowPay-LoadTest-1.0"
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      Accept-Language: "en-US,en;q=0.9"
+  ensure:
+    thresholds:
+      - http.response_time.p95: 1500
+        condition: always
+      - http.response_time.median: 500
+        condition: always
+
+scenarios:
+  - name: "FlowPay Homepage Load"
+    weight: 60
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$.title"
+              as: "pageTitle"
+      - think: 1
+
+  - name: "Static Assets"
+    weight: 25
+    flow:
+      - get:
+          url: "/flutter.js"
+          expect:
+            - statusCode: 200
+      - think: 0.5
+      - get:
+          url: "/manifest.json"
+          expect:
+            - statusCode: 200
+
+  - name: "Full Page Navigation"
+    weight: 15
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - think: 2
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200

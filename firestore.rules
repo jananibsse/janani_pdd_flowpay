@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // User wallets & subcollections
+    match /users/{userId} {
+      // Anyone logged in can read a user document (needed for receiver phone/QR searches)
+      allow read: if isAuthenticated();
+      
+      // Users can create their own wallet document
+      allow create: if isAuthenticated() && isOwner(userId);
+      
+      // Users can update their own wallet (link banks, set PIN, etc.)
+      // Also, senders can update a receiver's balance field during a transfer transaction.
+      allow update: if isAuthenticated() && (
+        isOwner(userId) || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance'])
+      );
+      
+      allow delete: if false;
+
+      // Transactions subcollection
+      match /transactions/{txId} {
+        // Users can read their own transactions
+        allow read: if isAuthenticated() && isOwner(userId);
+        // Any logged-in user can write a transaction entry (sender writes credit entry to receiver's subcollection)
+        allow create: if isAuthenticated();
+        allow update, delete: if false;
+      }
+
+      // Notifications subcollection
+      match /notifications/{notifId} {
+        // Users can read/update/delete their own notifications
+        allow read, update, delete: if isAuthenticated() && isOwner(userId);
+        // Any logged-in user can create a notification (sender notifies receiver)
+        allow create: if isAuthenticated();
+      }
+
+      // Offline Transactions subcollection
+      match /offline_transactions/{txId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // Global payments audit log
+    match /payments/{paymentId} {
+      // Any authenticated user can record a payment transaction
+      allow create: if isAuthenticated();
+      // Only the sender or receiver can read the payment log
+      allow read: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid
+      );
+      allow update, delete: if false;
+    }
+
+    // Admins registry
+    match /admins/{userId} {
+      // Anyone logged in can check if they are an admin
+      allow read: if isAuthenticated();
+      // Only existing admins can assign/edit admin status
+      allow write: if isAdmin();
+    }
+
+    // Withdrawal requests
+    match /withdrawals/{withdrawalId} {
+      // Any authenticated user can request a withdrawal
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      
+      // Admins can read/write all withdrawals. Users can only read their own withdrawals.
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

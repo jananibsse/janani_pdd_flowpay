@@ -1,0 +1,102 @@
+{
+  "base_url": "https://jananibsse.github.io/janani_pdd_flowpay/",
+  "valid_users": [
+    {
+      "email": "testuser01@flowpay.test",
+      "password": "TestPass@2024",
+      "name": "Test User One",
+      "role": "user",
+      "phone": "+919876543210"
+    },
+    {
+      "email": "admin@flowpay.test",
+      "password": "AdminPass@2024",
+      "name": "FlowPay Admin",
+      "role": "admin",
+      "phone": "+919876543211"
+    }
+  ],
+  "invalid_emails": [
+    "plainaddress",
+    "missing@",
+    "@nodomain.com",
+    "user@@double.com",
+    "user@domain",
+    "user with spaces@domain.com",
+    "",
+    "   "
+  ],
+  "invalid_passwords": [
+    "123456",
+    "password",
+    "abc",
+    "ALLUPPERCASE",
+    "alllowercase",
+    "NoSpecialChar1",
+    "short",
+    ""
+  ],
+  "valid_amounts": [
+    "10",
+    "100",
+    "500",
+    "1000",
+    "0.50",
+    "99.99"
+  ],
+  "invalid_amounts": [
+    "-100",
+    "0",
+    "abc",
+    "100abc",
+    "!@#$",
+    "",
+    "100000000"
+  ],
+  "sql_injections": [
+    "' OR '1'='1",
+    "'; DROP TABLE users; --",
+    "1' OR 1=1 --",
+    "' UNION SELECT * FROM users --",
+    "admin'--",
+    "1; SELECT * FROM users"
+  ],
+  "xss_payloads": [
+    "<script>alert('XSS')</script>",
+    "<img src=x onerror=alert(1)>",
+    "javascript:alert('XSS')",
+    "<svg onload=alert(1)>",
+    "'\"><script>alert('XSS')</script>"
+  ],
+  "test_bank_accounts": [
+    {
+      "account_number": "1234567890",
+      "ifsc": "SBIN0001234",
+      "bank_name": "State Bank of India",
+      "account_holder": "Test User One"
+    }
+  ],
+  "test_pins": {
+    "valid": "1234",
+    "invalid_letters": "ABCD",
+    "too_short": "123",
+    "too_long": "12345",
+    "sequential": "1234",
+    "repeated": "1111"
+  },
+  "timeout_thresholds_ms": {
+    "page_load": 3000,
+    "api_response": 2000,
+    "animation": 1000,
+    "flutter_init": 5000
+  },
+  "viewport_sizes": {
+    "mobile_small": {"width": 375, "height": 667},
+    "mobile_large": {"width": 414, "height": 896},
+    "tablet": {"width": 768, "height": 1024},
+    "laptop": {"width": 1366, "height": 768},
+    "desktop": {"width": 1920, "height": 1080},
+    "iphone_se": {"width": 320, "height": 568},
+    "landscape_mobile": {"width": 812, "height": 375}
+  }
+}

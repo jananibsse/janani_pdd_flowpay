@@ -1,0 +1,14 @@
+selenium
+webdriver-manager
+pytest
+pytest-html
+pytest-json-report
+pytest-rerunfailures
+pytest-timeout
+pytest-xdist
+openpyxl
+jinja2
+pandas
+requests
+Pillow
+python-dotenv

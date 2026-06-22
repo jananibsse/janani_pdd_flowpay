@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="FlowPay Appium E2E Suite" parallel="none" thread-count="1" verbose="2">
+
+  <parameter name="appiumServer"   value="http://localhost:4723"/>
+  <parameter name="appPackage"     value="com.example.flowpay_app"/>
+  <parameter name="appActivity"    value="com.example.flowpay_app.MainActivity"/>
+  <parameter name="platformVersion" value="13"/>
+  <parameter name="deviceName"     value="Pixel_5_API_33"/>
+
+  <listeners>
+    <listener class-name="com.flowpay.automation.listeners.TestListener"/>
+  </listeners>
+
+  <!-- Authentication Tests (40) -->
+  <test name="Authentication Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.AuthenticationTests"/>
+    </classes>
+  </test>
+
+  <!-- Authorization Tests (30) -->
+  <test name="Authorization Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.AuthorizationTests"/>
+    </classes>
+  </test>
+
+  <!-- Navigation Tests (30) -->
+  <test name="Navigation Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.NavigationTests"/>
+    </classes>
+  </test>
+
+  <!-- UI Validation Tests (40) -->
+  <test name="UI Validation Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.UIValidationTests"/>
+    </classes>
+  </test>
+
+  <!-- Forms Tests (40) -->
+  <test name="Forms Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.FormsTests"/>
+    </classes>
+  </test>
+
+  <!-- CRUD Tests (40) -->
+  <test name="CRUD Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.CRUDTests"/>
+    </classes>
+  </test>
+
+  <!-- Input Validation Tests (40) -->
+  <test name="Input Validation Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.InputValidationTests"/>
+    </classes>
+  </test>
+
+  <!-- Error Handling Tests (30) -->
+  <test name="Error Handling Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.ErrorHandlingTests"/>
+    </classes>
+  </test>
+
+  <!-- Accessibility Tests (20) -->
+  <test name="Accessibility Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.AccessibilityTests"/>
+    </classes>
+  </test>
+
+  <!-- Performance Smoke Tests (20) -->
+  <test name="Performance Smoke Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.PerformanceSmokeTests"/>
+    </classes>
+  </test>
+
+  <!-- Regression Tests (50) -->
+  <test name="Regression Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.RegressionTests"/>
+    </classes>
+  </test>
+
+</suite>

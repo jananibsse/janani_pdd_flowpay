@@ -1,0 +1,63 @@
+# ──────────────────────────────────────────────
+# FlowPay Automation — .gitignore
+# ──────────────────────────────────────────────
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.whl
+.venv/
+venv/
+env/
+.env
+
+# Java / Maven
+automation/appium/target/
+*.class
+*.jar
+*.war
+dependency-reduced-pom.xml
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Test Results (generated — do not track)
+Test_Results/
+Appium_Results/
+Performance_Results/
+automation/selenium/reports/
+automation/selenium/screenshots/
+automation/selenium/logs/
+automation/appium/test-output/
+automation/appium/surefire-reports/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node (k6/Artillery)
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# Temp
+*.tmp
+*.bak
+*.orig

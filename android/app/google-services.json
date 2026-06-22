@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "461330632925",
+    "project_id": "flowpay-441fc",
+    "storage_bucket": "flowpay-441fc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:461330632925:android:d3fdbcfa989e2c6f6b8b34",
+        "android_client_info": {
+          "package_name": "com.example.flowpay_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7Ng9cew32taKJKH1kqXspfstYQyQqngQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
