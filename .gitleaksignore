@@ -1,0 +1,15 @@
+# FlowPay App — Gitleaks Ignore Configuration
+# Allowlisting safe/expected keys and configurations
+
+[allowlist]
+description = "Allow safe API keys in client-side config"
+paths = [
+    # Firebase configuration for Flutter web/mobile (safe to expose client-side)
+    '''lib/firebase_options\.dart''',
+    '''lib/config/.*''',
+    
+    # Automation scripts using dummy/test keys
+    '''automation/security/k6-load-test\.js''',
+    '''automation/security/artillery-load-test\.yml''',
+    '''automation/selenium/data/test_data\.json'''
+]
