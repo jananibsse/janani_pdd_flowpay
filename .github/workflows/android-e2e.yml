@@ -49,7 +49,7 @@ jobs:
       - name: 🎯 Stage 3 — Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.0'
+          flutter-version: 'any'
           channel: 'stable'
           cache: true
 
