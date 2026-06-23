@@ -58,9 +58,8 @@ jobs:
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
 
-      - name: 🧪 Stage 4b — Flutter Unit Tests
+      - name: 🧪 Stage 4b — Flutter Unit Tests (311 Cases)
         run: flutter test --coverage
-        continue-on-error: true
 
       - name: 🌐 Stage 3 — Build Flutter Web
         run: |
@@ -404,9 +403,11 @@ jobs:
           ## 🧪 Test Execution Summary
           | Metric | Value |
           |--------|-------|
-          | **Total Test Cases** | 480+ |
-          | **Test Modules** | 13 |
-          | **Test Categories** | Authentication, Authorization, Navigation, UI, Forms, CRUD, Input Validation, Error Handling, Session, Accessibility, Responsive, Performance Smoke, Regression |
+          | **Flutter Unit Tests** | 311 |
+          | **Selenium E2E Tests** | 480+ |
+          | **Total Test Cases** | 790+ |
+          | **Test Modules** | 13 Selenium + 6 Unit |
+          | **Test Categories** | Authentication, Authorization, Navigation, UI, Forms, CRUD, Input Validation, Error Handling, Session, Accessibility, Responsive, Performance Smoke, Regression, Wallet, Notifications, Offline Sync, Models |
           
           ## 📁 Artifacts Generated
           ✓ Excel Reports (Automation_Test_Report.xlsx)  
