@@ -29,7 +29,7 @@ void main() {
     ots = OfflineTransactionService(preferences: prefs, notificationService: mockNs);
   });
 
-  OfflineTransaction _makeTx({
+  OfflineTransaction makeTx({
     double amount = 100,
     String senderId = 's',
     String senderPhone = '111',
@@ -53,59 +53,59 @@ void main() {
     });
 
     test('TC_OFL_002 — savePendingTransaction adds one item', () async {
-      await ots.savePendingTransaction(_makeTx());
+      await ots.savePendingTransaction(makeTx());
       expect((await ots.getPendingTransactions()).length, 1);
     });
 
     test('TC_OFL_003 — savePendingTransaction preserves amount', () async {
-      await ots.savePendingTransaction(_makeTx(amount: 250));
+      await ots.savePendingTransaction(makeTx(amount: 250));
       final tx = (await ots.getPendingTransactions()).first;
       expect(tx.amount, 250);
     });
 
     test('TC_OFL_004 — savePendingTransaction preserves senderId', () async {
-      await ots.savePendingTransaction(_makeTx(senderId: 'myId'));
+      await ots.savePendingTransaction(makeTx(senderId: 'myId'));
       final tx = (await ots.getPendingTransactions()).first;
       expect(tx.senderId, 'myId');
     });
 
     test('TC_OFL_005 — savePendingTransaction preserves senderPhone', () async {
-      await ots.savePendingTransaction(_makeTx(senderPhone: '9876'));
+      await ots.savePendingTransaction(makeTx(senderPhone: '9876'));
       final tx = (await ots.getPendingTransactions()).first;
       expect(tx.senderPhone, '9876');
     });
 
     test('TC_OFL_006 — savePendingTransaction preserves receiverPhone', () async {
-      await ots.savePendingTransaction(_makeTx(receiverPhone: '5432'));
+      await ots.savePendingTransaction(makeTx(receiverPhone: '5432'));
       final tx = (await ots.getPendingTransactions()).first;
       expect(tx.receiverPhone, '5432');
     });
 
     test('TC_OFL_007 — savePendingTransaction preserves type', () async {
-      await ots.savePendingTransaction(_makeTx(type: 'wallet_to_bank'));
+      await ots.savePendingTransaction(makeTx(type: 'wallet_to_bank'));
       final tx = (await ots.getPendingTransactions()).first;
       expect(tx.type, 'wallet_to_bank');
     });
 
     test('TC_OFL_008 — savePendingTransaction sets status to pending_sync', () async {
-      await ots.savePendingTransaction(_makeTx());
+      await ots.savePendingTransaction(makeTx());
       final tx = (await ots.getPendingTransactions()).first;
       expect(tx.status, OfflineTransaction.pendingStatus);
     });
 
     test('TC_OFL_009 — Multiple saves create multiple items', () async {
-      await ots.savePendingTransaction(_makeTx(amount: 10));
+      await ots.savePendingTransaction(makeTx(amount: 10));
       await Future.delayed(const Duration(milliseconds: 5));
-      await ots.savePendingTransaction(_makeTx(amount: 20));
+      await ots.savePendingTransaction(makeTx(amount: 20));
       await Future.delayed(const Duration(milliseconds: 5));
-      await ots.savePendingTransaction(_makeTx(amount: 30));
+      await ots.savePendingTransaction(makeTx(amount: 30));
       expect((await ots.getPendingTransactions()).length, 3);
     });
 
     test('TC_OFL_010 — Transactions sorted by createdAt descending', () async {
-      final tx1 = _makeTx(amount: 10);
+      final tx1 = makeTx(amount: 10);
       await Future.delayed(const Duration(milliseconds: 10));
-      final tx2 = _makeTx(amount: 20);
+      final tx2 = makeTx(amount: 20);
       await ots.savePendingTransaction(tx1);
       await ots.savePendingTransaction(tx2);
       final pending = await ots.getPendingTransactions();
@@ -113,16 +113,16 @@ void main() {
     });
 
     test('TC_OFL_011 — removeTransaction removes specific item', () async {
-      final tx = _makeTx(amount: 100);
+      final tx = makeTx(amount: 100);
       await ots.savePendingTransaction(tx);
       await ots.removeTransaction(tx.localId);
       expect(await ots.getPendingTransactions(), isEmpty);
     });
 
     test('TC_OFL_012 — removeTransaction leaves other items', () async {
-      final tx1 = _makeTx(amount: 10);
+      final tx1 = makeTx(amount: 10);
       await Future.delayed(const Duration(milliseconds: 10));
-      final tx2 = _makeTx(amount: 20);
+      final tx2 = makeTx(amount: 20);
       await ots.savePendingTransaction(tx1);
       await ots.savePendingTransaction(tx2);
       await ots.removeTransaction(tx1.localId);
@@ -132,15 +132,15 @@ void main() {
     });
 
     test('TC_OFL_013 — removeTransaction with non-existent id has no effect', () async {
-      await ots.savePendingTransaction(_makeTx());
+      await ots.savePendingTransaction(makeTx());
       await ots.removeTransaction('non_existent_id');
       expect((await ots.getPendingTransactions()).length, 1);
     });
 
     test('TC_OFL_014 — Save and remove multiple times', () async {
-      final tx1 = _makeTx(amount: 10);
+      final tx1 = makeTx(amount: 10);
       await Future.delayed(const Duration(milliseconds: 10));
-      final tx2 = _makeTx(amount: 20);
+      final tx2 = makeTx(amount: 20);
       await ots.savePendingTransaction(tx1);
       await ots.savePendingTransaction(tx2);
       await ots.removeTransaction(tx1.localId);
@@ -149,9 +149,9 @@ void main() {
     });
 
     test('TC_OFL_015 — localId is unique per transaction', () async {
-      final tx1 = _makeTx(amount: 10);
+      final tx1 = makeTx(amount: 10);
       await Future.delayed(const Duration(milliseconds: 5));
-      final tx2 = _makeTx(amount: 20);
+      final tx2 = makeTx(amount: 20);
       expect(tx1.localId, isNot(tx2.localId));
     });
   });
@@ -166,7 +166,7 @@ void main() {
     });
 
     test('TC_OFL_017 — syncPendingTransactions syncs wallet_to_wallet tx', () async {
-      final tx = _makeTx(receiverPhone: '333');
+      final tx = makeTx(receiverPhone: '333');
       await ots.savePendingTransaction(tx);
 
       when(mockWs.getUserIdByPhone('333')).thenAnswer((_) async => 'receiver1');
@@ -180,7 +180,7 @@ void main() {
     });
 
     test('TC_OFL_018 — syncPendingTransactions removes synced tx from queue', () async {
-      final tx = _makeTx(receiverPhone: '333');
+      final tx = makeTx(receiverPhone: '333');
       await ots.savePendingTransaction(tx);
 
       when(mockWs.getUserIdByPhone('333')).thenAnswer((_) async => 'r1');
@@ -194,7 +194,7 @@ void main() {
     });
 
     test('TC_OFL_019 — syncPendingTransactions fails if receiver not found', () async {
-      final tx = _makeTx(receiverPhone: '404');
+      final tx = makeTx(receiverPhone: '404');
       await ots.savePendingTransaction(tx);
 
       when(mockWs.getUserIdByPhone('404')).thenAnswer((_) async => null);
@@ -205,7 +205,7 @@ void main() {
     });
 
     test('TC_OFL_020 — syncPendingTransactions hasFailures is true on failure', () async {
-      final tx = _makeTx(receiverPhone: '404');
+      final tx = makeTx(receiverPhone: '404');
       await ots.savePendingTransaction(tx);
       when(mockWs.getUserIdByPhone('404')).thenAnswer((_) async => null);
       final result = await ots.syncPendingTransactions(walletService: mockWs);
@@ -213,7 +213,7 @@ void main() {
     });
 
     test('TC_OFL_021 — syncPendingTransactions hasFailures false on success', () async {
-      final tx = _makeTx(receiverPhone: '333');
+      final tx = makeTx(receiverPhone: '333');
       await ots.savePendingTransaction(tx);
       when(mockWs.getUserIdByPhone('333')).thenAnswer((_) async => 'r1');
       when(mockWs.sendMoney(senderId: anyNamed('senderId'), senderPhone: anyNamed('senderPhone'), receiverId: anyNamed('receiverId'), receiverPhone: anyNamed('receiverPhone'), amount: anyNamed('amount')))
@@ -226,7 +226,7 @@ void main() {
     });
 
     test('TC_OFL_022 — sync calls saveSyncedOfflineTransaction', () async {
-      final tx = _makeTx(receiverPhone: '333');
+      final tx = makeTx(receiverPhone: '333');
       await ots.savePendingTransaction(tx);
       when(mockWs.getUserIdByPhone('333')).thenAnswer((_) async => 'r1');
       when(mockWs.sendMoney(senderId: anyNamed('senderId'), senderPhone: anyNamed('senderPhone'), receiverId: anyNamed('receiverId'), receiverPhone: anyNamed('receiverPhone'), amount: anyNamed('amount')))
@@ -239,7 +239,7 @@ void main() {
     });
 
     test('TC_OFL_023 — sync calls notifyOfflineSyncCompleted', () async {
-      final tx = _makeTx(senderId: 'myS', receiverPhone: '333');
+      final tx = makeTx(senderId: 'myS', receiverPhone: '333');
       await ots.savePendingTransaction(tx);
       when(mockWs.getUserIdByPhone('333')).thenAnswer((_) async => 'r1');
       when(mockWs.sendMoney(senderId: anyNamed('senderId'), senderPhone: anyNamed('senderPhone'), receiverId: anyNamed('receiverId'), receiverPhone: anyNamed('receiverPhone'), amount: anyNamed('amount')))
@@ -252,7 +252,7 @@ void main() {
     });
 
     test('TC_OFL_024 — sync with WalletException counts as failure', () async {
-      final tx = _makeTx(receiverPhone: '333');
+      final tx = makeTx(receiverPhone: '333');
       await ots.savePendingTransaction(tx);
       when(mockWs.getUserIdByPhone('333')).thenAnswer((_) async => 'r1');
       when(mockWs.sendMoney(senderId: anyNamed('senderId'), senderPhone: anyNamed('senderPhone'), receiverId: anyNamed('receiverId'), receiverPhone: anyNamed('receiverPhone'), amount: anyNamed('amount')))
@@ -263,7 +263,7 @@ void main() {
     });
 
     test('TC_OFL_025 — sync with generic exception counts as failure', () async {
-      final tx = _makeTx(receiverPhone: '333');
+      final tx = makeTx(receiverPhone: '333');
       await ots.savePendingTransaction(tx);
       when(mockWs.getUserIdByPhone('333')).thenAnswer((_) async => 'r1');
       when(mockWs.sendMoney(senderId: anyNamed('senderId'), senderPhone: anyNamed('senderPhone'), receiverId: anyNamed('receiverId'), receiverPhone: anyNamed('receiverPhone'), amount: anyNamed('amount')))
@@ -275,7 +275,7 @@ void main() {
     });
 
     test('TC_OFL_026 — sync wallet_to_bank calls transferWalletToBank', () async {
-      final tx = _makeTx(type: OfflineTransaction.typeWalletToBank, receiverPhone: '');
+      final tx = makeTx(type: OfflineTransaction.typeWalletToBank, receiverPhone: '');
       await ots.savePendingTransaction(tx);
       when(mockWs.transferWalletToBank(uid: anyNamed('uid'), amount: anyNamed('amount'))).thenAnswer((_) async {});
       when(mockWs.saveSyncedOfflineTransaction(any)).thenAnswer((_) async {});
@@ -287,7 +287,7 @@ void main() {
     });
 
     test('TC_OFL_027 — sync bank_to_wallet calls transferBankToWallet', () async {
-      final tx = _makeTx(type: OfflineTransaction.typeBankToWallet, receiverPhone: '');
+      final tx = makeTx(type: OfflineTransaction.typeBankToWallet, receiverPhone: '');
       await ots.savePendingTransaction(tx);
       when(mockWs.transferBankToWallet(uid: anyNamed('uid'), amount: anyNamed('amount'))).thenAnswer((_) async {});
       when(mockWs.saveSyncedOfflineTransaction(any)).thenAnswer((_) async {});
@@ -319,7 +319,7 @@ void main() {
 
   group('OfflineTransaction Model', () {
     test('TC_OFL_031 — create() sets status to pending_sync', () {
-      final tx = _makeTx();
+      final tx = makeTx();
       expect(tx.status, 'pending_sync');
     });
 
@@ -334,12 +334,12 @@ void main() {
     });
 
     test('TC_OFL_034 — create() generates localId from timestamp', () {
-      final tx = _makeTx();
+      final tx = makeTx();
       expect(int.tryParse(tx.localId), isNotNull);
     });
 
     test('TC_OFL_035 — toJson() includes all fields', () {
-      final tx = _makeTx(amount: 42, senderId: 'sid', senderPhone: '111', receiverPhone: '222');
+      final tx = makeTx(amount: 42, senderId: 'sid', senderPhone: '111', receiverPhone: '222');
       final json = tx.toJson();
       expect(json['amount'], 42);
       expect(json['senderId'], 'sid');
@@ -352,7 +352,7 @@ void main() {
     });
 
     test('TC_OFL_036 — fromJson() round-trips correctly', () {
-      final tx = _makeTx(amount: 99);
+      final tx = makeTx(amount: 99);
       final json = tx.toJson();
       final restored = OfflineTransaction.fromJson(json);
       expect(restored.amount, 99);
@@ -410,13 +410,13 @@ void main() {
     });
 
     test('TC_OFL_045 — toJson createdAt is ISO 8601 string', () {
-      final tx = _makeTx();
+      final tx = makeTx();
       final json = tx.toJson();
       expect(DateTime.tryParse(json['createdAt'] as String), isNotNull);
     });
 
     test('TC_OFL_046 — Decimal amount preserved through serialization', () {
-      final tx = _makeTx(amount: 123.456);
+      final tx = makeTx(amount: 123.456);
       final json = tx.toJson();
       final restored = OfflineTransaction.fromJson(json);
       expect(restored.amount, closeTo(123.456, 0.001));

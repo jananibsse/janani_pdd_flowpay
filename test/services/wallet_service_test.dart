@@ -64,17 +64,20 @@ void main() {
         .thenAnswer((_) async {});
   });
 
-  Future<void> _createWallet(String uid, {String email = 'u@t.com', String phone = '111', double balance = 1000}) async {
+  Future<String> createWallet({String uid = 'default', String email = 'u@t.com', String phone = '111', double balance = 1000}) async {
     await fakeFirestore.collection('users').doc(uid).set({
       'uid': uid, 'email': email, 'phone': phone, 'balance': balance,
     });
+    return uid;
   }
 
-  Future<void> _createLinkedWallet(String uid, {double balance = 1000, double bankBalance = 25000}) async {
+  Future<String> createLinkedWallet({double balance = 1000, double bankBalance = 25000}) async {
+    final uid = 'linked_user';
     await fakeFirestore.collection('users').doc(uid).set({
       'uid': uid, 'email': '$uid@t.com', 'phone': '111', 'balance': balance,
       'isBankLinked': true, 'bankName': 'SBI', 'bankBalance': bankBalance,
     });
+    return uid;
   }
 
   // ─── WALLET CREATION (TC_WAL_001–020) ─────────────────
@@ -125,14 +128,21 @@ void main() {
     });
 
     test('TC_WAL_008 — ensureWalletExists does not overwrite existing wallet', () async {
-      await _createWallet('e8', balance: 5000);
+      Future<String> createWalletHelper({double initialBalance = 1000}) async {
+        await ws.ensureWalletExists(uid: 'e8', email: 'e8@t.com');
+        if (initialBalance != 1000) {
+          await ws.addMoney(uid: 'e8', amount: initialBalance - 1000);
+        }
+        return 'e8';
+      }
+      await createWalletHelper(initialBalance: 5000);
       await ws.ensureWalletExists(uid: 'e8', email: 'e8@t.com');
       final doc = await fakeFirestore.collection('users').doc('e8').get();
       expect(doc.data()?['balance'], 5000.0);
     });
 
     test('TC_WAL_009 — getUserIdByEmail returns uid for existing email', () async {
-      await _createWallet('u9', email: 'find@t.com');
+      await createWallet(uid: 'u9', email: 'find@t.com');
       final id = await ws.getUserIdByEmail('find@t.com');
       expect(id, 'u9');
     });
@@ -143,13 +153,13 @@ void main() {
     });
 
     test('TC_WAL_011 — getUserIdByEmail trims input', () async {
-      await _createWallet('u11', email: 'trim@t.com');
+      await createWallet(uid: 'u11', email: 'trim@t.com');
       final id = await ws.getUserIdByEmail('  trim@t.com  ');
       expect(id, 'u11');
     });
 
     test('TC_WAL_012 — getUserIdByPhone returns uid for existing phone', () async {
-      await _createWallet('u12', phone: '9876');
+      await createWallet(uid: 'u12', phone: '9876');
       final id = await ws.getUserIdByPhone('9876');
       expect(id, 'u12');
     });
@@ -160,7 +170,7 @@ void main() {
     });
 
     test('TC_WAL_014 — getUserIdByPhone trims input', () async {
-      await _createWallet('u14', phone: '1414');
+      await createWallet(uid: 'u14', phone: '1414');
       final id = await ws.getUserIdByPhone('  1414  ');
       expect(id, 'u14');
     });
@@ -205,14 +215,14 @@ void main() {
 
   group('WalletService — Add Money', () {
     test('TC_WAL_021 — addMoney increments balance', () async {
-      await _createWallet('am1');
+      await createWallet(uid: 'am1');
       await ws.addMoney(uid: 'am1', amount: 500);
       final doc = await fakeFirestore.collection('users').doc('am1').get();
       expect(doc.data()?['balance'], 1500.0);
     });
 
     test('TC_WAL_022 — addMoney creates credit transaction record', () async {
-      await _createWallet('am2');
+      await createWallet(uid: 'am2');
       await ws.addMoney(uid: 'am2', amount: 200);
       final txs = await fakeFirestore.collection('users').doc('am2').collection('transactions').get();
       expect(txs.docs.length, 1);
@@ -220,14 +230,14 @@ void main() {
     });
 
     test('TC_WAL_023 — addMoney transaction has correct amount', () async {
-      await _createWallet('am3');
+      await createWallet(uid: 'am3');
       await ws.addMoney(uid: 'am3', amount: 750);
       final txs = await fakeFirestore.collection('users').doc('am3').collection('transactions').get();
       expect(txs.docs.first.data()['amount'], 750);
     });
 
     test('TC_WAL_024 — addMoney transaction description is Added money', () async {
-      await _createWallet('am4');
+      await createWallet(uid: 'am4');
       await ws.addMoney(uid: 'am4', amount: 100);
       final txs = await fakeFirestore.collection('users').doc('am4').collection('transactions').get();
       expect(txs.docs.first.data()['description'], 'Added money');
@@ -242,27 +252,27 @@ void main() {
     });
 
     test('TC_WAL_027 — addMoney calls notification service', () async {
-      await _createWallet('am7');
+      await createWallet(uid: 'am7');
       await ws.addMoney(uid: 'am7', amount: 100);
       verify(mockNotif.notifyMoneyAdded(uid: 'am7', amount: 100)).called(1);
     });
 
     test('TC_WAL_028 — addMoney with very small amount (0.01)', () async {
-      await _createWallet('am8');
+      await createWallet(uid: 'am8');
       await ws.addMoney(uid: 'am8', amount: 0.01);
       final doc = await fakeFirestore.collection('users').doc('am8').get();
       expect(doc.data()?['balance'], closeTo(1000.01, 0.001));
     });
 
     test('TC_WAL_029 — addMoney with very large amount (999999)', () async {
-      await _createWallet('am9');
+      await createWallet(uid: 'am9');
       await ws.addMoney(uid: 'am9', amount: 999999);
       final doc = await fakeFirestore.collection('users').doc('am9').get();
       expect(doc.data()?['balance'], 1000999);
     });
 
     test('TC_WAL_030 — addMoney twice accumulates correctly', () async {
-      await _createWallet('am10');
+      await createWallet(uid: 'am10');
       await ws.addMoney(uid: 'am10', amount: 300);
       await ws.addMoney(uid: 'am10', amount: 200);
       final doc = await fakeFirestore.collection('users').doc('am10').get();
@@ -270,7 +280,7 @@ void main() {
     });
 
     test('TC_WAL_031 — addMoney creates 2 transaction records after 2 calls', () async {
-      await _createWallet('am11');
+      await createWallet(uid: 'am11');
       await ws.addMoney(uid: 'am11', amount: 100);
       await ws.addMoney(uid: 'am11', amount: 200);
       final txs = await fakeFirestore.collection('users').doc('am11').collection('transactions').get();
@@ -278,29 +288,29 @@ void main() {
     });
 
     test('TC_WAL_032 — addMoney with decimal amount (123.45)', () async {
-      await _createWallet('am12');
+      await createWallet(uid: 'am12');
       await ws.addMoney(uid: 'am12', amount: 123.45);
       final doc = await fakeFirestore.collection('users').doc('am12').get();
       expect(doc.data()?['balance'], closeTo(1123.45, 0.01));
     });
 
     test('TC_WAL_033 — addMoney to wallet with zero balance', () async {
-      await _createWallet('am13', balance: 0);
+      await createWallet(uid: 'am13', balance: 0);
       await ws.addMoney(uid: 'am13', amount: 500);
       final doc = await fakeFirestore.collection('users').doc('am13').get();
       expect(doc.data()?['balance'], 500.0);
     });
 
     test('TC_WAL_034 — addMoney with amount just above zero (0.001)', () async {
-      await _createWallet('am14');
+      await createWallet(uid: 'am14');
       await ws.addMoney(uid: 'am14', amount: 0.001);
       final doc = await fakeFirestore.collection('users').doc('am14').get();
       expect(doc.data()?['balance'], closeTo(1000.001, 0.0001));
     });
 
     test('TC_WAL_035 — addMoney to different users independently', () async {
-      await _createWallet('amA', balance: 100);
-      await _createWallet('amB', balance: 200);
+      await createWallet(uid: 'amA', balance: 100);
+      await createWallet(uid: 'amB', balance: 200);
       await ws.addMoney(uid: 'amA', amount: 50);
       await ws.addMoney(uid: 'amB', amount: 75);
       final a = await fakeFirestore.collection('users').doc('amA').get();
@@ -314,24 +324,24 @@ void main() {
 
   group('WalletService — Send Money', () {
     test('TC_WAL_036 — sendMoney deducts from sender', () async {
-      await _createWallet('s1', balance: 1000);
-      await _createWallet('r1', balance: 500);
+      await createWallet(uid: 's1', balance: 1000);
+      await createWallet(uid: 'r1', balance: 500);
       await ws.sendMoney(senderId: 's1', senderPhone: '1', receiverId: 'r1', receiverPhone: '2', amount: 200);
       final doc = await fakeFirestore.collection('users').doc('s1').get();
       expect(doc.data()?['balance'], 800.0);
     });
 
     test('TC_WAL_037 — sendMoney credits receiver', () async {
-      await _createWallet('s2', balance: 1000);
-      await _createWallet('r2', balance: 500);
+      await createWallet(uid: 's2', balance: 1000);
+      await createWallet(uid: 'r2', balance: 500);
       await ws.sendMoney(senderId: 's2', senderPhone: '1', receiverId: 'r2', receiverPhone: '2', amount: 200);
       final doc = await fakeFirestore.collection('users').doc('r2').get();
       expect(doc.data()?['balance'], 700.0);
     });
 
     test('TC_WAL_038 — sendMoney creates payment transaction', () async {
-      await _createWallet('s3', balance: 1000);
-      await _createWallet('r3', balance: 500);
+      await createWallet(uid: 's3', balance: 1000);
+      await createWallet(uid: 'r3', balance: 500);
       await ws.sendMoney(senderId: 's3', senderPhone: '1', receiverId: 'r3', receiverPhone: '2', amount: 100);
       final txs = await fakeFirestore.collection('transactions').get();
       expect(txs.docs.isNotEmpty, true);
@@ -339,16 +349,16 @@ void main() {
     });
 
     test('TC_WAL_039 — sendMoney creates debit record for sender', () async {
-      await _createWallet('s4', balance: 1000);
-      await _createWallet('r4', balance: 500);
+      await createWallet(uid: 's4', balance: 1000);
+      await createWallet(uid: 'r4', balance: 500);
       await ws.sendMoney(senderId: 's4', senderPhone: '1', receiverId: 'r4', receiverPhone: '2', amount: 100);
       final txs = await fakeFirestore.collection('users').doc('s4').collection('transactions').get();
       expect(txs.docs.any((d) => d.data()['type'] == 'debit'), true);
     });
 
     test('TC_WAL_040 — sendMoney creates credit record for receiver', () async {
-      await _createWallet('s5', balance: 1000);
-      await _createWallet('r5', balance: 500);
+      await createWallet(uid: 's5', balance: 1000);
+      await createWallet(uid: 'r5', balance: 500);
       await ws.sendMoney(senderId: 's5', senderPhone: '1', receiverId: 'r5', receiverPhone: '2', amount: 100);
       final txs = await fakeFirestore.collection('users').doc('r5').collection('transactions').get();
       expect(txs.docs.any((d) => d.data()['type'] == 'credit'), true);
@@ -383,8 +393,8 @@ void main() {
     });
 
     test('TC_WAL_045 — sendMoney throws for insufficient balance', () async {
-      await _createWallet('s45', balance: 100);
-      await _createWallet('r45', balance: 0);
+      await createWallet(uid: 's45', balance: 100);
+      await createWallet(uid: 'r45', balance: 0);
       expect(
         () => ws.sendMoney(senderId: 's45', senderPhone: '1', receiverId: 'r45', receiverPhone: '2', amount: 500),
         throwsA(isA<WalletException>().having((e) => e.message, 'msg', 'Insufficient balance.')),
@@ -392,8 +402,8 @@ void main() {
     });
 
     test('TC_WAL_046 — sendMoney exact balance succeeds', () async {
-      await _createWallet('s46', balance: 500);
-      await _createWallet('r46', balance: 0);
+      await createWallet(uid: 's46', balance: 500);
+      await createWallet(uid: 'r46', balance: 0);
       await ws.sendMoney(senderId: 's46', senderPhone: '1', receiverId: 'r46', receiverPhone: '2', amount: 500);
       final doc = await fakeFirestore.collection('users').doc('s46').get();
       expect(doc.data()?['balance'], 0.0);
