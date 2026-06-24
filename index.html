@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    FlowPay — Digital Wallet Application
+    Built with Flutter | Deployed to GitHub Pages
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/janani_pdd_flowpay/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="FlowPay — Secure digital wallet for instant money transfers, QR payments, and financial management. Send, receive, and manage money effortlessly.">
+  <meta name="keywords" content="FlowPay, digital wallet, money transfer, QR payment, UPI, mobile payment">
+  <meta name="author" content="FlowPay">
+  <meta name="theme-color" content="#6C63FF">
+  <meta name="color-scheme" content="dark light">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="FlowPay — Digital Wallet">
+  <meta property="og:description" content="Secure digital wallet for instant money transfers, QR payments, and financial management.">
+  <meta property="og:url" content="https://jananibsse.github.io/janani_pdd_flowpay/">
+  <meta property="og:site_name" content="FlowPay">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="FlowPay — Digital Wallet">
+  <meta name="twitter:description" content="Send, receive, and manage money effortlessly with FlowPay.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FlowPay">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Preconnect for faster resource loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="dns-prefetch" href="https://checkout.razorpay.com">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>FlowPay — Digital Wallet</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Loading screen styles (shown while Flutter initialises) -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f0c29;
+      background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 40%, #16213e 100%);
+      overflow: hidden;
+    }
+
+    .loading-container {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.6s ease;
+    }
+
+    .loading-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .logo-text {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #6C63FF, #a78bfa, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-subtitle {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 0.95rem;
+      color: #8b949e;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(108, 99, 255, 0.15);
+      border-top: 3px solid #6C63FF;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <script type="application/javascript" src="/assets/packages/flutter_inappwebview_web/assets/web/web_support.js" defer></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+  <!-- Loading screen — visible while Flutter boots -->
+  <div class="loading-container" id="loading">
+    <div class="logo-text">FlowPay</div>
+    <div class="logo-subtitle">Digital Wallet</div>
+    <div class="spinner"></div>
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Hide loading screen once Flutter is ready
+    window.addEventListener('flutter-first-frame', function () {
+      var loader = document.getElementById('loading');
+      if (loader) {
+        loader.classList.add('hidden');
+        setTimeout(function () { loader.remove(); }, 600);
+      }
+    });
+  </script>
+</body>
+</html>
