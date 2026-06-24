@@ -16,7 +16,6 @@ void main() {
     ns = NotificationService(firestore: fakeFirestore);
   });
 
-  Future<int> _notifCount() async {
   Future<int> notifCount() async {
     final q = await fakeFirestore.collection('users').doc(uid).collection('notifications').get();
     return q.docs.length;

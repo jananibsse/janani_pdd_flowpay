@@ -441,7 +441,7 @@ void main() {
     });
 
     test('TC_OFL_050 — JSON encode/decode round-trip via jsonEncode', () {
-      final tx = _makeTx(amount: 77);
+      final tx = makeTx(amount: 77);
       final encoded = jsonEncode(tx.toJson());
       final decoded = jsonDecode(encoded) as Map<String, dynamic>;
       final restored = OfflineTransaction.fromJson(decoded);
