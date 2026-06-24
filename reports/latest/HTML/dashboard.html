@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowPay Test Dashboard</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:#0d1117;color:#e6edf3;padding:30px}
+    h1{color:#58a6ff;margin-bottom:20px;font-size:1.8rem}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+    .card{background:#161b22;border:1px solid #21262d;border-radius:12px;padding:24px;text-align:center}
+    .val{font-size:2.5rem;font-weight:700;margin:8px 0}
+    .lbl{color:#8b949e;font-size:0.8rem;text-transform:uppercase;letter-spacing:1px}
+    .bar{background:#21262d;border-radius:8px;height:12px;overflow:hidden;margin:10px 0}
+    .fill{height:100%;background:#00b894;border-radius:8px;width:100%}
+    a{color:#58a6ff}
+  </style>
+</head>
+<body>
+  <h1>📊 FlowPay Test Dashboard — Build #17</h1>
+  <p style="color:#8b949e;margin-bottom:20px">2026-06-24 09:51 UTC | <a href="https://jananibsse.github.io/janani_pdd_flowpay/">https://jananibsse.github.io/janani_pdd_flowpay/</a></p>
+  <div class="grid">
+    <div class="card"><div class="lbl">Total</div><div class="val" style="color:#58a6ff">471</div></div>
+    <div class="card"><div class="lbl">Passed</div><div class="val" style="color:#3fb950">469</div></div>
+    <div class="card"><div class="lbl">Failed</div><div class="val" style="color:#f85149">2</div></div>
+    <div class="card"><div class="lbl">Pass Rate</div><div class="val" style="color:#a371f7">99.6%</div></div>
+  </div>
+  <div class="card" style="text-align:left">
+    <div class="lbl" style="margin-bottom:8px">Pass Rate Progress</div>
+    <div class="bar"><div class="fill"></div></div>
+    <p style="color:#00b894;font-weight:600;margin-top:8px">469/471 Tests Passed (99.6%)</p>
+  </div>
+  <p style="margin-top:20px;color:#8b949e">
+    <a href="execution-report.html">📊 Full Execution Report</a>
+  </p>
+</body></html>

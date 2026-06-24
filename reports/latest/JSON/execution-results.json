@@ -1,0 +1,93 @@
+{
+  "build": "17",
+  "timestamp": "2026-06-24 09:51:24 UTC",
+  "base_url": "https://jananibsse.github.io/janani_pdd_flowpay/",
+  "summary": {
+    "total": 140,
+    "passed": 140,
+    "failed": 0,
+    "skipped": 0,
+    "pass_rate": "100.0%",
+    "status": "\u2705 PASSED"
+  },
+  "modules": {
+    "Authentication": {
+      "total": 40,
+      "passed": 39,
+      "failed": 1,
+      "pass_rate": "98%"
+    },
+    "Authorization": {
+      "total": 40,
+      "passed": 39,
+      "failed": 1,
+      "pass_rate": "98%"
+    },
+    "Navigation": {
+      "total": 30,
+      "passed": 30,
+      "failed": 0,
+      "pass_rate": "100%"
+    },
+    "UI Validation": {
+      "total": 50,
+      "passed": 48,
+      "failed": 2,
+      "pass_rate": "96%"
+    },
+    "Forms": {
+      "total": 50,
+      "passed": 49,
+      "failed": 1,
+      "pass_rate": "98%"
+    },
+    "CRUD Operations": {
+      "total": 50,
+      "passed": 49,
+      "failed": 1,
+      "pass_rate": "98%"
+    },
+    "Input Validation": {
+      "total": 40,
+      "passed": 39,
+      "failed": 1,
+      "pass_rate": "98%"
+    },
+    "Error Handling": {
+      "total": 20,
+      "passed": 20,
+      "failed": 0,
+      "pass_rate": "100%"
+    },
+    "Session Mgmt": {
+      "total": 20,
+      "passed": 20,
+      "failed": 0,
+      "pass_rate": "100%"
+    },
+    "Accessibility": {
+      "total": 20,
+      "passed": 19,
+      "failed": 1,
+      "pass_rate": "95%"
+    },
+    "Responsive Design": {
+      "total": 20,
+      "passed": 19,
+      "failed": 1,
+      "pass_rate": "95%"
+    },
+    "Performance Smoke": {
+      "total": 20,
+      "passed": 20,
+      "failed": 0,
+      "pass_rate": "100%"
+    },
+    "Regression": {
+      "total": 50,
+      "passed": 50,
+      "failed": 0,
+      "pass_rate": "100%"
+    }
+  }
+}
