@@ -401,7 +401,9 @@ jobs:
           |--------|-------|
           | **Flutter Unit Tests** | 311 |
           | **Selenium E2E Tests** | 480 |
-          | **Total Test Cases** | 791 |
+          | **Backend Security Tests** | 150+ |
+          | **Load Test Scenarios** | 4 (k6) |
+          | **Total Test Cases** | 945+ |
           | **Selenium Modules** | 13 |
           | **Unit Test Suites** | 6 (Auth, Wallet, Notifications, Offline, Models, Widget) |
 
@@ -419,6 +421,7 @@ jobs:
           - 📦 [Download Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           EOF
           cat automation/test_summaries/selenium_summary.md >> $GITHUB_STEP_SUMMARY
+          cat automation/test_summaries/security_summary.md >> $GITHUB_STEP_SUMMARY
 
   # ============================================================
   # STAGE 13: STORE HISTORICAL RESULTS
