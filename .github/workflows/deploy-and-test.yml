@@ -383,7 +383,7 @@ jobs:
       - name: 📋 Stage 12 — Publish Execution Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-# 🚀 FlowPay CI/CD — Complete Test Execution Summary
+          # 🚀 FlowPay CI/CD — Complete Test Execution Summary
 
           ## 📊 Execution Information
           | Field | Value |

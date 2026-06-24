@@ -451,7 +451,7 @@ jobs:
       - name: 📋 Publish Security Execution Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-# 🔒 FlowPay Security Audit & Load Test Summary
+          # 🔒 FlowPay Security Audit & Load Test Summary
           
           ## 📊 Scan Information
           | Field | Value |

@@ -775,7 +775,7 @@ jobs:
       - name: 📋 Publish Android Appium Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-# 📱 Android Appium E2E Execution Summary
+          # 📱 Android Appium E2E Execution Summary
           
           ## 📊 Build Information
           | Field | Value |
