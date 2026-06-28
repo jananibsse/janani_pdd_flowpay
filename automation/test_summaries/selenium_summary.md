@@ -449,8 +449,8 @@
 | 40 | TC_RES_040 | Print layout clean and readable |
 </details>
 
-### ⚡ Performance Smoke Tests (30)
-<details><summary>Click to view 30 performance test cases</summary>
+### ⏳ Loading / Performance Smoke Tests (30)
+<details><summary>Click to view 30 loading/performance test cases</summary>
 
 | # | Test ID | Test Name |
 |---|---------|-----------|
@@ -486,8 +486,8 @@
 | 30 | TC_PERF_030 | No layout shifts during load (CLS < 0.1) |
 </details>
 
-### 🔁 Regression Tests (50)
-<details><summary>Click to view 50 regression test cases</summary>
+### 🐛 Bugs / Regression Tests (50)
+<details><summary>Click to view 50 bugs/regression test cases</summary>
 
 | # | Test ID | Test Name |
 |---|---------|-----------|
@@ -541,6 +541,24 @@
 | 48 | TC_REG_048 | Re-link different bank → Updated details |
 | 49 | TC_REG_049 | Email notifications sent on key actions |
 | 50 | TC_REG_050 | End-to-end: Full payment lifecycle |
+</details>
+
+### 🛡️ Vulnerability / Security E2E Tests (30)
+<details><summary>Click to view 30 vulnerability test cases</summary>
+
+| # | Test ID | Test Name |
+|---|---------|-----------|
+| 1 | TC_VULN_001 | XSS payload sanitized on Profile Name |
+| 2 | TC_VULN_002 | SQL injection prevented in Search |
+| 3 | TC_VULN_003 | Auth bypass attempt redirects to Login |
+| 4 | TC_VULN_004 | Session ID not exposed in URL parameters |
+| 5 | TC_VULN_005 | Cookie Secure flag verified on authentication |
+| 6 | TC_VULN_006 | Clickjacking prevented via X-Frame-Options |
+| 7 | TC_VULN_007 | Missing CORS headers blocked by browser |
+| 8 | TC_VULN_008 | Direct navigation to restricted routes blocked |
+| 9 | TC_VULN_009 | Role escalation attempt via UI tampering |
+| 10 | TC_VULN_010 | Path traversal attempt in file uploads |
+| 11–30 | TC_VULN_011–030 | End-to-end frontend security validations |
 </details>
 
 ---

@@ -134,8 +134,8 @@
 | 4–20 | AP_A11Y_004-020 | VoiceOver/TalkBack compatibility |
 </details>
 
-### ⚡ Performance Smoke Tests (20)
-<details><summary>Click to view 20 Appium performance test cases</summary>
+### ⏳ Loading / Performance Smoke Tests (20)
+<details><summary>Click to view 20 Appium loading/performance test cases</summary>
 
 | # | Test ID | Test Name |
 |---|---------|-----------|
@@ -145,8 +145,8 @@
 | 4–20 | AP_PERF_004-020 | Memory/CPU usage checks |
 </details>
 
-### 🔁 Regression Tests (100)
-<details><summary>Click to view 100 Appium regression test cases</summary>
+### 🐛 Bugs / Regression Tests (100)
+<details><summary>Click to view 100 Appium bugs/regression test cases</summary>
 
 | # | Test ID | Test Name |
 |---|---------|-----------|
@@ -156,4 +156,22 @@
 | 4 | AP_REG_004 | Add Money via Razorpay |
 | 5 | AP_REG_005 | Notification to Transaction detail deep link |
 | 6–100 | AP_REG_006-100 | Comprehensive user journeys and flows |
+</details>
+
+### 🛡️ Vulnerability / Security E2E Tests (30)
+<details><summary>Click to view 30 Appium vulnerability test cases</summary>
+
+| # | Test ID | Test Name |
+|---|---------|-----------|
+| 1 | AP_VULN_001 | Prevent screenshot on secure screens |
+| 2 | AP_VULN_002 | Biometric bypass attempt blocked |
+| 3 | AP_VULN_003 | SSL Pinning validation |
+| 4 | AP_VULN_004 | Session invalidation on backgrounding (timeout) |
+| 5 | AP_VULN_005 | Clipboard cleared after copying sensitive data |
+| 6 | AP_VULN_006 | Keylogger protection on PIN entry |
+| 7 | AP_VULN_007 | Prevent root/jailbreak execution |
+| 8 | AP_VULN_008 | Direct deep link injection blocked |
+| 9 | AP_VULN_009 | Input sanitization on mobile fields |
+| 10 | AP_VULN_010 | Unencrypted local storage check |
+| 11–30 | AP_VULN_011–030 | End-to-end mobile security validations |
 </details>
