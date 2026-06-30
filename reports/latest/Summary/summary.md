@@ -3,7 +3,7 @@
 ## Build Information
 | Field | Value |
 |-------|-------|
-| Build Number | #19 |
+| Build Number | #20 |
 | Execution Date | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |
 | Git Commit | `0ac4d4b8210f39f02f06631449519efbf6c4e981` |
 | Branch | `main` |
