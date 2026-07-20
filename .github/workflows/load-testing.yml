@@ -30,7 +30,7 @@ jobs:
 
       - name: 📦 Install Dependencies
         run: |
-          pip install pytest pytest-html pytest-json-report openpyxl requests
+          pip install pytest pytest-html pytest-json-report pytest-timeout openpyxl requests
 
       - name: 🔧 Install k6
         run: |
