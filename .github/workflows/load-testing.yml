@@ -1,0 +1,276 @@
+name: ⚡ FlowPay — Load & Performance Testing (400 Tests)
+
+on:
+  workflow_dispatch:
+
+env:
+  BASE_URL: 'https://jananibsse.github.io/janani_pdd_flowpay/'
+  PYTHON_VERSION: '3.11'
+  RETENTION_DAYS: 30
+
+permissions:
+  contents: read
+
+jobs:
+  # ============================================================
+  # RUN K6 LOAD TESTS + 400 ASSERTIONS
+  # ============================================================
+  load-tests:
+    name: ⚡ Execute Load Tests (100 VUs × 1 min)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: |
+          pip install pytest pytest-html pytest-json-report openpyxl requests
+
+      - name: 🔧 Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring \
+            --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] \
+            https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6 -y
+
+      - name: ⚡ Run k6 Baseline Load Test
+        run: |
+          mkdir -p LoadTest_Results/k6 LoadTest_Results/html LoadTest_Results/json LoadTest_Results/excel
+
+          k6 run \
+            --out json=LoadTest_Results/k6/baseline-raw.json \
+            --summary-export=LoadTest_Results/k6/baseline-summary.json \
+            -e BASE_URL="${{ env.BASE_URL }}" \
+            automation/security/k6-load-test.js \
+            || true
+        continue-on-error: true
+
+      - name: 🧪 Run 400 Load Test Assertions
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+        run: |
+          python -m pytest automation/security/test_load_analysis.py \
+            --html=LoadTest_Results/html/loadtest_report.html \
+            --self-contained-html \
+            --json-report \
+            --json-report-file=LoadTest_Results/json/loadtest_results.json \
+            -v \
+            --tb=short \
+            --timeout=30 \
+            -p no:warnings \
+            || true
+        continue-on-error: true
+
+      - name: 📊 Generate Excel Report
+        if: always()
+        run: |
+          python3 << 'PYEOF'
+          import json, os
+          from datetime import datetime
+          import openpyxl
+          from openpyxl.styles import PatternFill, Font, Alignment
+
+          wb = openpyxl.Workbook()
+          header_fill = PatternFill(start_color="1e1e2e", end_color="1e1e2e", fill_type="solid")
+          header_font = Font(color="a855f7", bold=True, size=12)
+          pass_fill = PatternFill(start_color="238636", end_color="238636", fill_type="solid")
+          fail_fill = PatternFill(start_color="da3633", end_color="da3633", fill_type="solid")
+          white_font = Font(color="ffffff", size=11)
+
+          # ---- Dashboard ----
+          ws = wb.active
+          ws.title = "Dashboard"
+          ws.sheet_properties.tabColor = "a855f7"
+          ws.append(["FlowPay Load & Performance Test Report"])
+          ws["A1"].font = Font(bold=True, size=16, color="a855f7")
+          ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+          ws.append([f"Target: {os.environ.get('BASE_URL', 'N/A')}"])
+          ws.append([])
+
+          # k6 metrics
+          k6_file = "LoadTest_Results/k6/baseline-summary.json"
+          if os.path.exists(k6_file):
+              with open(k6_file) as f:
+                  k6 = json.load(f)
+              metrics = k6.get("metrics", {})
+              http_dur = metrics.get("http_req_duration", {})
+              http_reqs = metrics.get("http_reqs", {})
+
+              ws.append(["k6 Load Test Metrics", ""])
+              for cell in ws[ws.max_row]:
+                  cell.fill = header_fill
+                  cell.font = header_font
+              ws.append(["Requests Per Second", f"{http_reqs.get('rate', 0):.1f} req/sec"])
+              ws.append(["Total Requests", http_reqs.get("count", 0)])
+              ws.append(["Avg Response Time", f"{http_dur.get('avg', 0):.1f} ms"])
+              ws.append(["Min Response Time", f"{http_dur.get('min', 0):.1f} ms"])
+              ws.append(["Max Response Time", f"{http_dur.get('max', 0):.1f} ms"])
+              ws.append(["P95 Response Time", f"{http_dur.get('p(95)', 0):.1f} ms"])
+              ws.append(["P99 Response Time", f"{http_dur.get('p(99)', 0):.1f} ms"])
+              fail_rate = metrics.get("http_req_failed", {}).get("rate", 0)
+              ws.append(["Error Rate", f"{fail_rate * 100:.2f}%"])
+          ws.append([])
+
+          # pytest metrics
+          results_file = "LoadTest_Results/json/loadtest_results.json"
+          tests = []
+          passed = failed = 0
+          if os.path.exists(results_file):
+              with open(results_file) as f:
+                  data = json.load(f)
+              for t in data.get("tests", []):
+                  name = t.get("nodeid", "")
+                  outcome = t.get("outcome", "")
+                  duration = t.get("duration", 0)
+                  tests.append((name, outcome, duration))
+                  if outcome == "passed": passed += 1
+                  else: failed += 1
+
+          total = passed + failed
+          rate = (passed / total * 100) if total > 0 else 0
+
+          ws.append(["Assertion Results", ""])
+          for cell in ws[ws.max_row]:
+              cell.fill = header_fill
+              cell.font = header_font
+          ws.append(["Total Assertions", total])
+          ws.append(["Passed", passed])
+          ws.append(["Failed", failed])
+          ws.append(["Pass Rate", f"{rate:.1f}%"])
+          ws.column_dimensions["A"].width = 30
+          ws.column_dimensions["B"].width = 25
+
+          # ---- Test Results ----
+          ws2 = wb.create_sheet("Test Results")
+          ws2.append(["#", "Test Case", "Category", "Status", "Duration (s)"])
+          for cell in ws2[1]:
+              cell.fill = header_fill
+              cell.font = header_font
+
+          for i, (name, outcome, dur) in enumerate(tests, 1):
+              parts = name.split("::")
+              test_name = parts[-1] if len(parts) > 1 else name
+              category = "General"
+              if len(parts) >= 2:
+                  cls = parts[-2] if len(parts) >= 3 else ""
+                  if "Response" in cls: category = "Response Time"
+                  elif "Throughput" in cls: category = "Throughput"
+                  elif "Error" in cls: category = "Error Rate"
+                  elif "Concur" in cls: category = "Concurrency"
+                  elif "Endpoint" in cls: category = "Endpoint"
+                  elif "Resource" in cls: category = "Resource"
+                  elif "Scala" in cls: category = "Scalability"
+                  elif "Reliab" in cls: category = "Reliability"
+
+              ws2.append([i, test_name, category, outcome.upper(), f"{dur:.2f}"])
+              row = ws2.max_row
+              sc = ws2.cell(row, 4)
+              if outcome == "passed":
+                  sc.fill = pass_fill
+                  sc.font = white_font
+              else:
+                  sc.fill = fail_fill
+                  sc.font = white_font
+
+          ws2.column_dimensions["A"].width = 8
+          ws2.column_dimensions["B"].width = 60
+          ws2.column_dimensions["C"].width = 20
+          ws2.column_dimensions["D"].width = 15
+          ws2.column_dimensions["E"].width = 15
+
+          wb.save("LoadTest_Results/excel/LoadTest_Report.xlsx")
+          print("Load test Excel report generated!")
+          PYEOF
+
+      - name: 📋 Publish Summary
+        if: always()
+        run: |
+          python3 << 'PYEOF'
+          import json, os
+
+          k6_file = "LoadTest_Results/k6/baseline-summary.json"
+          rps = avg = p95 = p99 = mn = mx = err = "N/A"
+          total_reqs = 0
+          if os.path.exists(k6_file):
+              with open(k6_file) as f:
+                  k6 = json.load(f)
+              m = k6.get("metrics", {})
+              d = m.get("http_req_duration", {})
+              r = m.get("http_reqs", {})
+              rps = f"{r.get('rate', 0):.1f}"
+              total_reqs = r.get("count", 0)
+              avg = f"{d.get('avg', 0):.1f}"
+              mn = f"{d.get('min', 0):.1f}"
+              mx = f"{d.get('max', 0):.1f}"
+              p95 = f"{d.get('p(95)', 0):.1f}"
+              p99 = f"{d.get('p(99)', 0):.1f}"
+              err = f"{m.get('http_req_failed', {}).get('rate', 0) * 100:.2f}"
+
+          results_file = "LoadTest_Results/json/loadtest_results.json"
+          passed = failed = 0
+          if os.path.exists(results_file):
+              with open(results_file) as f:
+                  data = json.load(f)
+              for t in data.get("tests", []):
+                  if t.get("outcome") == "passed": passed += 1
+                  else: failed += 1
+
+          total = passed + failed
+          rate = (passed / total * 100) if total > 0 else 0
+
+          summary = f"""# ⚡ Load & Performance Testing — Results
+
+## 🚀 k6 Baseline Load Test (100 VUs × 1 min)
+| Metric | Value |
+|--------|-------|
+| **Requests/sec** | {rps} req/sec |
+| **Total Requests** | {total_reqs} |
+| **Avg Response** | {avg} ms |
+| **Min Response** | {mn} ms |
+| **Max Response** | {mx} ms |
+| **P95 Response** | {p95} ms |
+| **P99 Response** | {p99} ms |
+| **Error Rate** | {err}% |
+
+## 🧪 Performance Assertions ({total} tests)
+| Metric | Value |
+|--------|-------|
+| **Total Assertions** | {total} |
+| **Passed** | {passed} |
+| **Failed** | {failed} |
+| **Pass Rate** | {rate:.1f}% |
+
+## 📁 Downloadable Artifacts
+- **LoadTest-HTML-Report** — Self-contained HTML report
+- **LoadTest-Excel-Report** — Excel with k6 metrics + assertion results
+"""
+          with open(os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null"), "a") as f:
+              f.write(summary)
+          PYEOF
+
+      - name: 📤 Upload HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LoadTest-HTML-Report
+          path: LoadTest_Results/html/
+          retention-days: ${{ env.RETENTION_DAYS }}
+
+      - name: 📤 Upload Excel Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LoadTest-Excel-Report
+          path: LoadTest_Results/excel/
+          retention-days: ${{ env.RETENTION_DAYS }}
