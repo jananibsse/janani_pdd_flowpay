@@ -90,4 +90,11 @@
     </classes>
   </test>
 
+  <!-- Vulnerability Tests (20) -->
+  <test name="Vulnerability Tests" preserve-order="true">
+    <classes>
+      <class name="com.flowpay.automation.tests.VulnerabilityTests"/>
+    </classes>
+  </test>
+
 </suite>

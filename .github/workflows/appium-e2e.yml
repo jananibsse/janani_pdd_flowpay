@@ -77,6 +77,8 @@ jobs:
           - AccessibilityTests
           - PerformanceSmokeTests
           - RegressionTests
+          - VulnerabilityTests
+
 
     steps:
       - name: 📥 Checkout Repository
@@ -132,6 +134,7 @@ jobs:
               -Dtest=${{ matrix.test_suite }} \
               -Dappium.server=http://localhost:4723 \
               -Dapp.package=com.example.flowpay_app \
+              -Dplatform.version=${{ env.ANDROID_API_LEVEL }} \
               || true
         continue-on-error: true
 

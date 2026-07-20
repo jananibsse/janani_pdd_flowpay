@@ -209,7 +209,7 @@ jobs:
         run: |
           cd automation/selenium
           python3 << 'PYEOF'
-          import json, os
+          import json, os, textwrap
 
           results_file = "reports/json/selenium_results.json"
           passed = failed = errors = skipped = 0
@@ -226,22 +226,23 @@ jobs:
           total = passed + failed + errors + skipped
           rate = (passed / total * 100) if total > 0 else 0
 
-          summary = f"""# 🌐 Selenium Web E2E — Test Results
+          summary = textwrap.dedent(f"""\
+              # 🌐 Selenium Web E2E — Test Results
 
-## 📊 Test Metrics
-| Metric | Value |
-|--------|-------|
-| **Total Tests** | {total} |
-| **Passed** | {passed} |
-| **Failed** | {failed} |
-| **Errors** | {errors} |
-| **Skipped** | {skipped} |
-| **Pass Rate** | {rate:.1f}% |
+              ## 📊 Test Metrics
+              | Metric | Value |
+              |--------|-------|
+              | **Total Tests** | {total} |
+              | **Passed** | {passed} |
+              | **Failed** | {failed} |
+              | **Errors** | {errors} |
+              | **Skipped** | {skipped} |
+              | **Pass Rate** | {rate:.1f}% |
 
-## 📁 Downloadable Artifacts
-- **Selenium-HTML-Report** — Self-contained HTML test report
-- **Selenium-Excel-Report** — Excel workbook with Dashboard, Results, Module Summary
-"""
+              ## 📁 Downloadable Artifacts
+              - **Selenium-HTML-Report** — Self-contained HTML test report
+              - **Selenium-Excel-Report** — Excel workbook with Dashboard, Results, Module Summary
+          """)
           with open(os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null"), "a") as f:
               f.write(summary)
           print(summary)

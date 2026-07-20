@@ -197,7 +197,7 @@ jobs:
         if: always()
         run: |
           python3 << 'PYEOF'
-          import json, os
+          import json, os, textwrap
 
           k6_file = "LoadTest_Results/k6/baseline-summary.json"
           rps = avg = p95 = p99 = mn = mx = err = "N/A"
@@ -229,32 +229,33 @@ jobs:
           total = passed + failed
           rate = (passed / total * 100) if total > 0 else 0
 
-          summary = f"""# ⚡ Load & Performance Testing — Results
+          summary = textwrap.dedent(f"""\
+              # ⚡ Load & Performance Testing — Results
 
-## 🚀 k6 Baseline Load Test (100 VUs × 1 min)
-| Metric | Value |
-|--------|-------|
-| **Requests/sec** | {rps} req/sec |
-| **Total Requests** | {total_reqs} |
-| **Avg Response** | {avg} ms |
-| **Min Response** | {mn} ms |
-| **Max Response** | {mx} ms |
-| **P95 Response** | {p95} ms |
-| **P99 Response** | {p99} ms |
-| **Error Rate** | {err}% |
+              ## 🚀 k6 Baseline Load Test (100 VUs × 1 min)
+              | Metric | Value |
+              |--------|-------|
+              | **Requests/sec** | {rps} req/sec |
+              | **Total Requests** | {total_reqs} |
+              | **Avg Response** | {avg} ms |
+              | **Min Response** | {mn} ms |
+              | **Max Response** | {mx} ms |
+              | **P95 Response** | {p95} ms |
+              | **P99 Response** | {p99} ms |
+              | **Error Rate** | {err}% |
 
-## 🧪 Performance Assertions ({total} tests)
-| Metric | Value |
-|--------|-------|
-| **Total Assertions** | {total} |
-| **Passed** | {passed} |
-| **Failed** | {failed} |
-| **Pass Rate** | {rate:.1f}% |
+              ## 🧪 Performance Assertions ({total} tests)
+              | Metric | Value |
+              |--------|-------|
+              | **Total Assertions** | {total} |
+              | **Passed** | {passed} |
+              | **Failed** | {failed} |
+              | **Pass Rate** | {rate:.1f}% |
 
-## 📁 Downloadable Artifacts
-- **LoadTest-HTML-Report** — Self-contained HTML report
-- **LoadTest-Excel-Report** — Excel with k6 metrics + assertion results
-"""
+              ## 📁 Downloadable Artifacts
+              - **LoadTest-HTML-Report** — Self-contained HTML report
+              - **LoadTest-Excel-Report** — Excel with k6 metrics + assertion results
+          """)
           with open(os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null"), "a") as f:
               f.write(summary)
           PYEOF
