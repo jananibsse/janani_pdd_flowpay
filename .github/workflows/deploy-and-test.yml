@@ -198,7 +198,7 @@ jobs:
           - batch_name: "errors-session"
             test_modules: "test_error_handling test_session_management test_accessibility"
           - batch_name: "perf-regression"
-            test_modules: "test_responsive test_performance_smoke test_regression"
+            test_modules: "test_responsive test_performance_smoke test_regression test_vulnerability"
 
     steps:
       - name: 📥 Checkout Repository
@@ -322,33 +322,6 @@ jobs:
         with:
           name: test-reports-build-${{ github.run_number }}
           path: Test_Results/
-          retention-days: ${{ env.RETENTION_DAYS }}
-
-  # ============================================================
-  # STAGE 11: UPLOAD ARTIFACTS
-  # ============================================================
-  upload-artifacts:
-    name: 📦 Stage 11 — Upload All Artifacts
-    runs-on: ubuntu-latest
-    needs: generate-reports
-    if: always()
-
-    steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: 📥 Download All Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: '*'
-          path: all-artifacts/
-          merge-multiple: false
-
-      - name: 📤 Stage 11 — Upload Consolidated Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: FlowPay-E2E-Complete-Report-Build-${{ github.run_number }}
-          path: all-artifacts/
           retention-days: ${{ env.RETENTION_DAYS }}
 
   # ============================================================
