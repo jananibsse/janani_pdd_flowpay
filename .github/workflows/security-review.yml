@@ -450,7 +450,11 @@ jobs:
     steps:
       - name: 📋 Publish Security Execution Summary
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          if [ "${{ needs.sast-analysis.result }}" = "success" ]; then SEMGREP_STATUS="✅ Complete"; else SEMGREP_STATUS="⚠️ Partial"; fi
+          if [ "${{ needs.dependency-scan.result }}" = "success" ]; then DEP_STATUS="✅ Complete"; else DEP_STATUS="⚠️ Partial"; fi
+          if [ "${{ needs.performance-tests.result }}" = "success" ]; then PERF_STATUS="✅ Complete"; else PERF_STATUS="⚠️ Partial"; fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
           # 🔒 FlowPay Security Audit & Load Test Summary
           
           ## 📊 Scan Information
@@ -459,15 +463,15 @@ jobs:
           | **Scan Date** | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |
           | **Repository** | ${{ github.repository }} |
           | **Branch** | ${{ github.ref_name }} |
-          | **Commit** | `${{ github.sha }}` |
+          | **Commit** | \`${{ github.sha }}\` |
           
           ## 🔍 Scan Coverage
           | Tool | Status |
           |------|--------|
-          | Semgrep SAST | ${{ needs.sast-analysis.result == 'success' && '✅ Complete' || '⚠️ Partial' }} |
-          | Trivy Dependency Scan | ${{ needs.dependency-scan.result == 'success' && '✅ Complete' || '⚠️ Partial' }} |
-          | Gitleaks Secret Detection | ${{ needs.dependency-scan.result == 'success' && '✅ Complete' || '⚠️ Partial' }} |
-          | k6 Performance Tests | ${{ needs.performance-tests.result == 'success' && '✅ Complete' || '⚠️ Partial' }} |
+          | Semgrep SAST | $SEMGREP_STATUS |
+          | Trivy Dependency Scan | $DEP_STATUS |
+          | Gitleaks Secret Detection | $DEP_STATUS |
+          | k6 Performance Tests | $PERF_STATUS |
 
           ## 🏆 Overall Security Score: 72/100 — MEDIUM Risk
           

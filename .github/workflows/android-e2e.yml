@@ -124,7 +124,14 @@ jobs:
             "emulator" || true
           echo "✅ Android SDK setup complete"
 
-      - name: 📱 Stage 6 — Start Android Emulator
+      - name: 📲 Stage 5 — Download APK Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: flowpay-debug-apk
+          path: apk/
+        continue-on-error: true
+
+      - name: 📱 Stage 6-11 — Start Emulator & Execute Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ env.ANDROID_API_LEVEL }}
@@ -132,70 +139,39 @@ jobs:
           arch: ${{ env.ANDROID_ARCH }}
           profile: pixel_5
           disable-animations: true
-          script: echo "Emulator started"
-        continue-on-error: true
-
-      - name: 🔍 Stage 7 — Verify Emulator Readiness
-        run: |
-          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 5; done'
-          echo "✅ Emulator is ready"
-          adb devices
-        continue-on-error: true
-
-      - name: 📲 Stage 8 — Download & Install APK
-        uses: actions/download-artifact@v4
-        with:
-          name: flowpay-debug-apk
-          path: apk/
-        continue-on-error: true
-
-      - name: 📲 Install APK on Emulator
-        run: |
-          APK_FILE=$(find apk/ -name "*.apk" | head -1)
-          if [ -f "$APK_FILE" ]; then
-            adb install -r "$APK_FILE"
-            echo "✅ APK installed: $APK_FILE"
-          else
-            echo "⚠️ APK not found, continuing in test-generation mode"
-          fi
-        continue-on-error: true
-
-      - name: 🚀 Stage 9 — Start Appium Server
-        run: |
-          npm install -g appium@latest
-          appium driver install uiautomator2 || true
-          appium server \
-            --port 4723 \
-            --log-level info \
-            --log appium-server.log &
-          sleep 15
-          echo "✅ Appium server started"
-        continue-on-error: true
-
-      - name: 🔍 Stage 10 — Verify Appium Health
-        run: |
-          curl -s http://localhost:4723/status | python3 -m json.tool || true
-          echo "Appium health check complete"
-        continue-on-error: true
-
-      - name: 🧪 Stage 11 — Execute Appium Tests (${{ matrix.test_suite }})
-        run: |
-          mkdir -p Appium_Results/screenshots Appium_Results/logs Appium_Results/json
-          
-          cd automation/appium
-          
-          # Run Maven tests with TestNG
-          mvn test \
-            -Dtest=${{ matrix.test_suite }} \
-            -DtestSuite=testng.xml \
-            -Dappium.server=http://localhost:4723 \
-            -Dapp.package=com.example.flowpay_app \
-            -Dplatform.version=${{ env.ANDROID_API_LEVEL }} \
-            -DsureFireReportDir=../../Appium_Results/surefire \
-            -pl . \
-            || true
-          
-          echo "✅ Test suite ${{ matrix.test_suite }} execution complete"
+          script: |
+            echo "✅ Emulator is ready"
+            adb devices
+            
+            APK_FILE=$(find apk/ -name "*.apk" | head -1)
+            if [ -f "$APK_FILE" ]; then
+              adb install -r "$APK_FILE"
+              echo "✅ APK installed: $APK_FILE"
+            else
+              echo "⚠️ APK not found, continuing in test-generation mode"
+            fi
+            
+            npm install -g appium@latest
+            appium driver install uiautomator2 || true
+            appium server --port 4723 --log-level info --log appium-server.log &
+            sleep 15
+            echo "✅ Appium server started"
+            
+            curl -s http://localhost:4723/status | python3 -m json.tool || true
+            
+            mkdir -p Appium_Results/screenshots Appium_Results/logs Appium_Results/json
+            cd automation/appium
+            mvn test \
+              -Dtest=${{ matrix.test_suite }} \
+              -DtestSuite=testng.xml \
+              -Dappium.server=http://localhost:4723 \
+              -Dapp.package=com.example.flowpay_app \
+              -Dplatform.version=${{ env.ANDROID_API_LEVEL }} \
+              -DsureFireReportDir=../../Appium_Results/surefire \
+              -pl . \
+              || true
+            
+            echo "✅ Test suite ${{ matrix.test_suite }} execution complete"
         continue-on-error: true
 
       - name: 📤 Upload Appium Results
