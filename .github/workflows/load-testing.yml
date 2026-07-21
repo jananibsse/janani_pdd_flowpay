@@ -48,7 +48,6 @@ jobs:
           mkdir -p LoadTest_Results/k6 LoadTest_Results/html LoadTest_Results/json LoadTest_Results/excel
           k6 run \
             --out json=LoadTest_Results/k6/baseline-raw.json \
-            --summary-export=LoadTest_Results/k6/baseline-summary.json \
             -e BASE_URL=${{ env.BASE_URL }} \
             automation/security/k6-load-test.js \
             || true
