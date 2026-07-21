@@ -1,4 +1,4 @@
-name: 🚀 FlowPay CI/CD — Build & Deploy
+name: FlowPay CI/CD Build and Deploy
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
   # STAGE 1-4: BUILD & STATIC ANALYSIS
   # ============================================================
   build:
-    name: 🏗️ Stage 1-4 — Build & Static Analysis
+    name: Stage 1-4 Build and Static Analysis
     runs-on: ubuntu-latest
     outputs:
       build_status: ${{ steps.build_status.outputs.status }}
@@ -36,39 +36,39 @@ jobs:
       build_number: ${{ github.run_number }}
 
     steps:
-      - name: 📥 Stage 1 — Checkout Repository
+      - name: Stage 1 Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🎯 Stage 2 — Setup Flutter
+      - name: Stage 2 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
           cache: true
 
-      - name: 📦 Stage 2b — Install Dependencies
+      - name: Stage 2b Install Dependencies
         run: flutter pub get
 
-      - name: 🔍 Stage 4 — Static Analysis (Flutter Analyze)
+      - name: Stage 4 Static Analysis (Flutter Analyze)
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
 
-      - name: 🧪 Stage 4b — Flutter Unit Tests
+      - name: Stage 4b Flutter Unit Tests
         run: flutter test --coverage
 
-      - name: 🌐 Stage 3 — Build Flutter Web
+      - name: Stage 3 Build Flutter Web
         run: |
           flutter build web --release \
             --base-href="/janani_pdd_flowpay/" \
             --dart-define=FLUTTER_WEB_AUTO_DETECT=true
 
-      - name: ✅ Set Build Status
+      - name: Set Build Status
         id: build_status
         run: echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: 📤 Upload Web Build Artifact
+      - name: Upload Web Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: flutter-web-build
@@ -79,21 +79,21 @@ jobs:
   # STAGE 5: DEPLOY TO GITHUB PAGES
   # ============================================================
   deploy:
-    name: 🌍 Stage 5 — Deploy to GitHub Pages
+    name: Stage 5 Deploy to GitHub Pages
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 📥 Download Web Build
+      - name: Download Web Build
         uses: actions/download-artifact@v4
         with:
           name: flutter-web-build
           path: build/web/
 
-      - name: 🚀 Stage 5 — Deploy to GitHub Pages
+      - name: Stage 5 Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -104,33 +104,33 @@ jobs:
   # STAGE 6-7: VERIFY DEPLOYMENT
   # ============================================================
   verify-deployment:
-    name: 🔍 Stage 6-7 — Verify Deployment
+    name: Stage 6-7 Verify Deployment
     runs-on: ubuntu-latest
     needs: deploy
 
     steps:
-      - name: ⏳ Wait for Propagation
+      - name: Wait for Propagation
         run: sleep 30
 
-      - name: 🔍 Verify Deployment
+      - name: Verify Deployment
         run: |
           BASE_URL="${{ env.BASE_URL }}"
           for i in $(seq 1 5); do
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL" || echo "000")
-            echo "Attempt $i/5 — HTTP $HTTP_CODE"
+            echo "Attempt $i/5 - HTTP $HTTP_CODE"
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ Deployment verified!"
+              echo "Deployment verified!"
               exit 0
             fi
             sleep 15
           done
-          echo "⚠️ Deployment may still be propagating"
+          echo "Deployment may still be propagating"
 
-      - name: 📋 Publish Build Summary
+      - name: Publish Build Summary
         if: always()
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # 🚀 FlowPay Build & Deploy Summary
+          # FlowPay Build and Deploy Summary
 
           | Field | Value |
           |-------|-------|
@@ -140,8 +140,8 @@ jobs:
           | **URL** | [${{ env.BASE_URL }}](${{ env.BASE_URL }}) |
 
           > Testing is performed by dedicated workflows:
-          > - 🌐 **Selenium E2E** — `selenium-e2e.yml`
-          > - 📱 **Appium E2E** — `appium-e2e.yml`
-          > - 🛡️ **Vulnerability** — `vulnerability-testing.yml`
-          > - ⚡ **Load Testing** — `load-testing.yml`
+          > - **Selenium E2E** - `selenium-e2e.yml`
+          > - **Appium E2E** - `appium-e2e.yml`
+          > - **Vulnerability** - `vulnerability-testing.yml`
+          > - **Load Testing** - `load-testing.yml`
           EOF
