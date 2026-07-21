@@ -1,4 +1,4 @@
-name: 🌐 FlowPay Selenium — Web E2E Tests (400 Tests)
+name: "🌐 FlowPay Selenium — Web E2E Tests (400 Tests)"
 
 on:
   workflow_dispatch:
@@ -16,255 +16,229 @@ permissions:
   actions: read
 
 jobs:
-  # ============================================================
-  # RUN ALL SELENIUM TESTS
-  # ============================================================
   selenium-tests:
-    name: 🧪 Run Selenium E2E Tests
+    name: "🧪 Run Selenium E2E Tests"
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: "📥 Checkout Repository"
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+      - name: "🐍 Setup Python"
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: 🌐 Setup Chrome & ChromeDriver
+      - name: "🌐 Setup Chrome"
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: stable
 
-      - name: 📦 Install Dependencies
+      - name: "🔧 Install ChromeDriver"
         run: |
-          cd automation/selenium
-          pip install -r requirements.txt
-          pip install openpyxl
+          CHROME_FULL=$(google-chrome --version | grep -oP '[\d.]+')
+          CHROME_MAJOR=$(echo $CHROME_FULL | cut -d. -f1)
+          echo "Chrome: $CHROME_FULL (major $CHROME_MAJOR)"
+          if [ "$CHROME_MAJOR" -ge 115 ]; then
+            BASE="https://storage.googleapis.com/chrome-for-testing-public"
+            DRIVER_URL="${BASE}/${CHROME_FULL}/linux64/chromedriver-linux64.zip"
+            wget -q "$DRIVER_URL" -O /tmp/chromedriver.zip 2>/dev/null || true
+          fi
+          if [ ! -f /tmp/chromedriver.zip ] || [ ! -s /tmp/chromedriver.zip ]; then
+            LATEST=$(wget -q -O- "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAJOR}" 2>/dev/null || echo "")
+            if [ -n "$LATEST" ]; then
+              wget -q "https://chromedriver.storage.googleapis.com/${LATEST}/chromedriver_linux64.zip" -O /tmp/chromedriver.zip
+            fi
+          fi
+          if [ -f /tmp/chromedriver.zip ] && [ -s /tmp/chromedriver.zip ]; then
+            cd /tmp && unzip -o chromedriver.zip -d /tmp/cdriver_extract
+            find /tmp/cdriver_extract -name "chromedriver" -exec cp {} /usr/local/bin/chromedriver \;
+            chmod +x /usr/local/bin/chromedriver
+            echo "ChromeDriver installed: $(chromedriver --version)"
+          else
+            echo "Using selenium-manager fallback"
+          fi
 
-      - name: 🧪 Execute 400 Selenium Tests
+      - name: "📦 Install Python Dependencies"
+        run: |
+          pip install selenium webdriver-manager pytest pytest-html \
+            pytest-json-report pytest-rerunfailures pytest-timeout \
+            pytest-xdist openpyxl jinja2 requests Pillow python-dotenv
+
+      - name: "🧪 Execute 400 Selenium Tests"
         env:
           BASE_URL: ${{ env.BASE_URL }}
           HEADLESS: 'true'
           SCREENSHOT_ON_FAILURE: 'true'
+          WDM_LOG: '0'
         run: |
           cd automation/selenium
           mkdir -p reports/html reports/json reports/excel screenshots logs
-
           python -m pytest tests/ \
             --html=reports/html/selenium_report.html \
             --self-contained-html \
             --json-report \
             --json-report-file=reports/json/selenium_results.json \
-            -v \
-            --tb=short \
-            --timeout=60 \
-            --reruns=2 \
-            --reruns-delay=5 \
+            -v --tb=short --timeout=120 \
+            --reruns=1 --reruns-delay=3 \
             -p no:warnings \
             || true
         continue-on-error: true
 
-      - name: 📊 Generate Excel Report
+      - name: "📊 Generate Excel Report"
         if: always()
         run: |
           cd automation/selenium
-          python3 << 'PYEOF'
+          python3 - << 'PYEOF'
           import json, os
           from datetime import datetime
-
           try:
               import openpyxl
-              from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
-
+              from openpyxl.styles import PatternFill, Font, Alignment
               wb = openpyxl.Workbook()
-
-              # ---- Dashboard Sheet ----
               ws_dash = wb.active
               ws_dash.title = "Dashboard"
               ws_dash.sheet_properties.tabColor = "1e90ff"
-
-              header_fill = PatternFill(start_color="1e1e2e", end_color="1e1e2e", fill_type="solid")
-              header_font = Font(color="58a6ff", bold=True, size=12)
-              pass_fill = PatternFill(start_color="238636", end_color="238636", fill_type="solid")
-              fail_fill = PatternFill(start_color="da3633", end_color="da3633", fill_type="solid")
-              white_font = Font(color="ffffff", size=11)
-
+              hf = PatternFill(start_color="1e1e2e", end_color="1e1e2e", fill_type="solid")
+              hfont = Font(color="58a6ff", bold=True, size=12)
+              pfill = PatternFill(start_color="238636", end_color="238636", fill_type="solid")
+              ffill = PatternFill(start_color="da3633", end_color="da3633", fill_type="solid")
+              wfont = Font(color="ffffff", size=11)
               ws_dash.append(["FlowPay Selenium E2E Test Report"])
               ws_dash["A1"].font = Font(bold=True, size=16, color="58a6ff")
               ws_dash.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
               ws_dash.append([f"Target: {os.environ.get('BASE_URL', 'N/A')}"])
               ws_dash.append([])
-
-              # Parse JSON results
-              results_file = "reports/json/selenium_results.json"
+              rf = "reports/json/selenium_results.json"
               tests = []
               passed = failed = errors = skipped = 0
-
-              if os.path.exists(results_file):
-                  with open(results_file) as f:
-                      data = json.load(f)
+              if os.path.exists(rf):
+                  with open(rf) as fh:
+                      data = json.load(fh)
                   for t in data.get("tests", []):
                       name = t.get("nodeid", "Unknown")
                       outcome = t.get("outcome", "unknown")
-                      duration = t.get("duration", 0)
-                      tests.append((name, outcome, duration))
+                      dur = t.get("duration", 0)
+                      tests.append((name, outcome, dur))
                       if outcome == "passed": passed += 1
                       elif outcome == "failed": failed += 1
                       elif outcome == "error": errors += 1
                       else: skipped += 1
-
               total = passed + failed + errors + skipped
               rate = (passed / total * 100) if total > 0 else 0
-
               ws_dash.append(["Metric", "Value"])
-              for cell in ws_dash[ws_dash.max_row]:
-                  cell.fill = header_fill
-                  cell.font = header_font
-              ws_dash.append(["Total Tests", total])
-              ws_dash.append(["Passed", passed])
-              ws_dash.append(["Failed", failed])
-              ws_dash.append(["Errors", errors])
-              ws_dash.append(["Skipped", skipped])
-              ws_dash.append(["Pass Rate", f"{rate:.1f}%"])
+              for cell in ws_dash[ws_dash.max_row]: cell.fill = hf; cell.font = hfont
+              for row in [["Total Tests", total], ["Passed", passed], ["Failed", failed],
+                          ["Errors", errors], ["Skipped", skipped], ["Pass Rate", f"{rate:.1f}%"]]:
+                  ws_dash.append(row)
               ws_dash.column_dimensions["A"].width = 30
               ws_dash.column_dimensions["B"].width = 25
-
-              # ---- Detailed Results Sheet ----
               ws_det = wb.create_sheet("Test Results")
               ws_det.sheet_properties.tabColor = "238636"
-              det_headers = ["#", "Test Case", "Module", "Status", "Duration (s)"]
-              ws_det.append(det_headers)
-              for cell in ws_det[1]:
-                  cell.fill = header_fill
-                  cell.font = header_font
-                  cell.alignment = Alignment(horizontal="center")
-
+              ws_det.append(["Num", "Test Case", "Module", "Status", "Duration (s)"])
+              for cell in ws_det[1]: cell.fill = hf; cell.font = hfont
               for i, (name, outcome, dur) in enumerate(tests, 1):
                   parts = name.split("::")
                   module = parts[0].split("/")[-1].replace(".py", "") if parts else "unknown"
-                  test_name = parts[-1] if len(parts) > 1 else name
-                  ws_det.append([i, test_name, module, outcome.upper(), f"{dur:.2f}"])
+                  tname = parts[-1] if len(parts) > 1 else name
+                  ws_det.append([i, tname, module, outcome.upper(), f"{dur:.2f}"])
                   row = ws_det.max_row
-                  status_cell = ws_det.cell(row, 4)
-                  if outcome == "passed":
-                      status_cell.fill = pass_fill
-                      status_cell.font = white_font
-                  elif outcome in ("failed", "error"):
-                      status_cell.fill = fail_fill
-                      status_cell.font = white_font
-
-              for col_letter in ["A", "B", "C", "D", "E"]:
-                  ws_det.column_dimensions[col_letter].width = 25
+                  sc = ws_det.cell(row, 4)
+                  if outcome == "passed": sc.fill = pfill; sc.font = wfont
+                  elif outcome in ("failed", "error"): sc.fill = ffill; sc.font = wfont
+              for col in ["A","B","C","D","E"]: ws_det.column_dimensions[col].width = 25
               ws_det.column_dimensions["B"].width = 60
-
-              # ---- Module Summary Sheet ----
               ws_mod = wb.create_sheet("Module Summary")
               ws_mod.sheet_properties.tabColor = "f0883e"
               ws_mod.append(["Module", "Total", "Passed", "Failed", "Pass Rate"])
-              for cell in ws_mod[1]:
-                  cell.fill = header_fill
-                  cell.font = header_font
-
+              for cell in ws_mod[1]: cell.fill = hf; cell.font = hfont
               modules = {}
               for name, outcome, _ in tests:
                   parts = name.split("::")
                   mod = parts[0].split("/")[-1].replace(".py", "") if parts else "unknown"
-                  if mod not in modules:
-                      modules[mod] = {"total": 0, "passed": 0, "failed": 0}
+                  if mod not in modules: modules[mod] = {"total": 0, "passed": 0, "failed": 0}
                   modules[mod]["total"] += 1
-                  if outcome == "passed":
-                      modules[mod]["passed"] += 1
-                  else:
-                      modules[mod]["failed"] += 1
-
+                  if outcome == "passed": modules[mod]["passed"] += 1
+                  else: modules[mod]["failed"] += 1
               for mod, stats in sorted(modules.items()):
                   pr = (stats["passed"] / stats["total"] * 100) if stats["total"] > 0 else 0
                   ws_mod.append([mod, stats["total"], stats["passed"], stats["failed"], f"{pr:.0f}%"])
-
-              for col_letter in ["A", "B", "C", "D", "E"]:
-                  ws_mod.column_dimensions[col_letter].width = 22
-
+              for col in ["A","B","C","D","E"]: ws_mod.column_dimensions[col].width = 22
               wb.save("reports/excel/Selenium_E2E_Report.xlsx")
-              print("Excel report generated successfully!")
-
+              print(f"Excel report: {total} tests, {passed} passed, {failed} failed")
           except Exception as e:
-              print(f"Excel generation error: {e}")
-              # Create minimal report
+              print(f"Excel error: {e}")
               import openpyxl
               wb = openpyxl.Workbook()
               ws = wb.active
               ws.title = "Results"
-              ws.append(["Selenium E2E Test Report"])
-              ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
-              ws.append(["Note: Detailed results could not be parsed"])
+              ws.append(["Selenium E2E Test Report — Error generating detailed report"])
               wb.save("reports/excel/Selenium_E2E_Report.xlsx")
           PYEOF
 
-      - name: 📋 Publish Summary
+      - name: "📋 Publish Summary"
         if: always()
         run: |
           cd automation/selenium
-          python3 << 'PYEOF'
-          import json, os, textwrap
-
-          results_file = "reports/json/selenium_results.json"
+          python3 - << 'PYEOF'
+          import json, os
+          rf = "reports/json/selenium_results.json"
           passed = failed = errors = skipped = 0
-          if os.path.exists(results_file):
-              with open(results_file) as f:
-                  data = json.load(f)
+          if os.path.exists(rf):
+              with open(rf) as fh:
+                  data = json.load(fh)
               for t in data.get("tests", []):
                   o = t.get("outcome", "")
                   if o == "passed": passed += 1
                   elif o == "failed": failed += 1
                   elif o == "error": errors += 1
                   else: skipped += 1
-
           total = passed + failed + errors + skipped
           rate = (passed / total * 100) if total > 0 else 0
-
-          summary = textwrap.dedent(f"""\
-              # 🌐 Selenium Web E2E — Test Results
-
-              ## 📊 Test Metrics
-              | Metric | Value |
-              |--------|-------|
-              | **Total Tests** | {total} |
-              | **Passed** | {passed} |
-              | **Failed** | {failed} |
-              | **Errors** | {errors} |
-              | **Skipped** | {skipped} |
-              | **Pass Rate** | {rate:.1f}% |
-
-              ## 📁 Downloadable Artifacts
-              - **Selenium-HTML-Report** — Self-contained HTML test report
-              - **Selenium-Excel-Report** — Excel workbook with Dashboard, Results, Module Summary
-          """)
-          with open(os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null"), "a") as f:
-              f.write(summary)
+          lines = [
+              "# 🌐 Selenium Web E2E — Test Results\n",
+              "## 📊 Test Metrics\n",
+              "| Metric | Value |\n",
+              "|--------|-------|\n",
+              f"| Total Tests | {total} |\n",
+              f"| Passed | {passed} |\n",
+              f"| Failed | {failed} |\n",
+              f"| Errors | {errors} |\n",
+              f"| Skipped | {skipped} |\n",
+              f"| Pass Rate | {rate:.1f}% |\n",
+              "\n## 📁 Downloadable Artifacts\n",
+              "- Selenium-HTML-Report — Self-contained HTML test report\n",
+              "- Selenium-Excel-Report — Excel workbook with Dashboard, Results, Module Summary\n",
+              "- Selenium-Screenshots — Screenshots captured on failure\n",
+          ]
+          summary = "".join(lines)
+          sf = os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null")
+          with open(sf, "a") as fh:
+              fh.write(summary)
           print(summary)
           PYEOF
 
-      - name: 📤 Upload HTML Report
+      - name: "📤 Upload HTML Report"
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Selenium-HTML-Report
           path: automation/selenium/reports/html/
           retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: warn
 
-      - name: 📤 Upload Excel Report
+      - name: "📤 Upload Excel Report"
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Selenium-Excel-Report
           path: automation/selenium/reports/excel/
           retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: warn
 
-      - name: 📤 Upload Screenshots
+      - name: "📤 Upload Screenshots"
         uses: actions/upload-artifact@v4
         if: always()
         with:

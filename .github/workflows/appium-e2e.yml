@@ -1,4 +1,4 @@
-name: 📱 FlowPay Appium — Android E2E Tests (400 Tests)
+name: "📱 FlowPay Appium — Android E2E Tests (400 Tests)"
 
 on:
   workflow_dispatch:
@@ -20,46 +20,47 @@ jobs:
   # BUILD APK
   # ============================================================
   build-apk:
-    name: 🏗️ Build Flutter APK
+    name: "🏗️ Build Flutter APK"
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: "📥 Checkout Repository"
         uses: actions/checkout@v4
 
-      - name: ☕ Setup Java
+      - name: "☕ Setup Java"
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
 
-      - name: 🎯 Setup Flutter
+      - name: "🎯 Setup Flutter"
         uses: subosito/flutter-action@v2
         with:
           flutter-version: 'any'
           channel: 'stable'
           cache: true
 
-      - name: 📦 Install Dependencies
+      - name: "📦 Install Flutter Dependencies"
         run: flutter pub get
 
-      - name: 🔨 Build Debug APK
+      - name: "🔨 Build Debug APK"
         run: flutter build apk --debug --dart-define=FLUTTER_TEST_MODE=true
         continue-on-error: true
 
-      - name: 📤 Upload APK
+      - name: "📤 Upload APK"
         uses: actions/upload-artifact@v4
         with:
           name: flowpay-debug-apk
           path: build/app/outputs/
           retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: warn
         continue-on-error: true
 
   # ============================================================
-  # RUN APPIUM TESTS
+  # RUN APPIUM TESTS IN PARALLEL MATRIX
   # ============================================================
   appium-tests:
-    name: 📱 Run Appium E2E Tests (${{ matrix.test_suite }})
+    name: "📱 Appium Tests (${{ matrix.test_suite }})"
     runs-on: ubuntu-latest
     needs: build-apk
     strategy:
@@ -79,21 +80,20 @@ jobs:
           - RegressionTests
           - VulnerabilityTests
 
-
     steps:
-      - name: 📥 Checkout Repository
+      - name: "📥 Checkout Repository"
         uses: actions/checkout@v4
 
-      - name: ☕ Setup Java
+      - name: "☕ Setup Java"
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
 
-      - name: 🤖 Setup Android SDK
+      - name: "🤖 Setup Android SDK"
         uses: android-actions/setup-android@v3
 
-      - name: 📦 Install Android Dependencies
+      - name: "📦 Install Android Build Tools"
         run: |
           yes | sdkmanager --licenses || true
           sdkmanager \
@@ -103,14 +103,15 @@ jobs:
             "system-images;android-${{ env.ANDROID_API_LEVEL }};${{ env.ANDROID_TARGET }};${{ env.ANDROID_ARCH }}" \
             "emulator" || true
 
-      - name: 📲 Download APK
+      - name: "📲 Download APK Artifact"
         uses: actions/download-artifact@v4
         with:
           name: flowpay-debug-apk
           path: apk/
         continue-on-error: true
 
-      - name: 📱 Run Tests in Emulator
+      - name: "📱 Run Appium Tests in Emulator"
+        timeout-minutes: 45
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ env.ANDROID_API_LEVEL }}
@@ -118,16 +119,23 @@ jobs:
           arch: ${{ env.ANDROID_ARCH }}
           profile: pixel_5
           disable-animations: true
+          emulator-boot-timeout: 600
           script: |
+            set -e
+            echo "=== Devices ==="
             adb devices
-            APK_FILE=$(find apk/ -name "*.apk" | head -1)
-            if [ -f "$APK_FILE" ]; then adb install -r "$APK_FILE"; fi
-
-            npm install -g appium@latest
+            APK_FILE=$(find apk/ -name "*.apk" 2>/dev/null | head -1)
+            if [ -f "$APK_FILE" ]; then
+              echo "Installing APK: $APK_FILE"
+              adb install -r "$APK_FILE" || echo "APK install skipped"
+            else
+              echo "No APK found, continuing"
+            fi
+            echo "=== Setting up Appium ==="
+            npm install -g appium@2.5.4 2>/dev/null || npm install -g appium@latest
             appium driver install uiautomator2 || true
-            appium server --port 4723 --log-level info --log appium-server.log &
-            sleep 15
-
+            appium server --port 4723 --log-level error &
+            sleep 20
             mkdir -p Appium_Results/screenshots Appium_Results/logs
             cd automation/appium
             mvn test \
@@ -135,10 +143,11 @@ jobs:
               -Dappium.server=http://localhost:4723 \
               -Dapp.package=com.example.flowpay_app \
               -Dplatform.version=${{ env.ANDROID_API_LEVEL }} \
-              || true
+              -q \
+              || echo "Suite ${{ matrix.test_suite }} done"
         continue-on-error: true
 
-      - name: 📤 Upload Test Results
+      - name: "📤 Upload Test Results"
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -150,27 +159,27 @@ jobs:
           if-no-files-found: ignore
 
   # ============================================================
-  # GENERATE REPORTS
+  # GENERATE COMBINED REPORT
   # ============================================================
   generate-reports:
-    name: 📊 Generate Appium Reports
+    name: "📊 Generate Appium Reports"
     runs-on: ubuntu-latest
     needs: appium-tests
     if: always()
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: "📥 Checkout Repository"
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
+      - name: "🐍 Setup Python"
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install Dependencies
-        run: pip install openpyxl jinja2
+      - name: "📦 Install Dependencies"
+        run: pip install openpyxl
 
-      - name: 📥 Download All Results
+      - name: "📥 Download All Test Results"
         uses: actions/download-artifact@v4
         with:
           pattern: appium-results-*
@@ -178,19 +187,19 @@ jobs:
           merge-multiple: true
         continue-on-error: true
 
-      - name: 📊 Generate HTML + Excel Reports
+      - name: "📊 Generate Reports"
         run: |
           mkdir -p Appium_Reports/html Appium_Reports/excel
-
-          python3 << 'PYEOF'
+          python3 - << 'PYEOF'
           import os, glob, xml.etree.ElementTree as ET
           from datetime import datetime
           import openpyxl
-          from openpyxl.styles import PatternFill, Font, Alignment
+          from openpyxl.styles import PatternFill, Font
 
-          # Parse surefire XML reports
           tests = []
           xml_files = glob.glob("collected/**/TEST-*.xml", recursive=True)
+          print(f"Found {len(xml_files)} XML files")
+
           for xf in xml_files:
               try:
                   tree = ET.parse(xf)
@@ -200,37 +209,28 @@ jobs:
                       name = tc.get("name", "Unknown")
                       classname = tc.get("classname", "Unknown")
                       time_val = float(tc.get("time", "0"))
-                      failure = tc.find("failure")
-                      error = tc.find("error")
-                      if failure is not None:
-                          status = "FAILED"
-                      elif error is not None:
-                          status = "ERROR"
-                      else:
-                          status = "PASSED"
-                      tests.append({"name": name, "class": classname, "time": time_val, "status": status, "suite": suite_name})
-              except:
-                  pass
+                      if tc.find("failure") is not None: status = "FAILED"
+                      elif tc.find("error") is not None: status = "ERROR"
+                      elif tc.find("skipped") is not None: status = "SKIPPED"
+                      else: status = "PASSED"
+                      tests.append({"name": name, "class": classname,
+                                    "time": time_val, "status": status, "suite": suite_name})
+              except Exception as ex:
+                  print(f"Error parsing {xf}: {ex}")
 
-          # If no XML results, use the Appium summary for the 400 test cases
           if not tests:
+              print("No XML results — generating placeholder list for 400 tests")
               suites = {
                   "AuthenticationTests": 40, "AuthorizationTests": 30, "NavigationTests": 30,
                   "UIValidationTests": 40, "FormsTests": 40, "CRUDTests": 40,
                   "InputValidationTests": 40, "ErrorHandlingTests": 30, "AccessibilityTests": 20,
                   "PerformanceSmokeTests": 20, "RegressionTests": 50, "VulnerabilityTests": 20
               }
-              i = 1
               for suite, count in suites.items():
                   for j in range(1, count + 1):
-                      tests.append({
-                          "name": f"test_{suite.lower().replace('tests','')}_{j:03d}",
-                          "class": f"com.flowpay.automation.tests.{suite}",
-                          "time": 0.0,
-                          "status": "SKIPPED",
-                          "suite": suite
-                      })
-                      i += 1
+                      tests.append({"name": f"test_{suite.lower().replace('tests','')}_{'%03d' % j}",
+                                    "class": f"com.flowpay.automation.tests.{suite}",
+                                    "time": 0.0, "status": "SKIPPED", "suite": suite})
 
           passed = sum(1 for t in tests if t["status"] == "PASSED")
           failed = sum(1 for t in tests if t["status"] == "FAILED")
@@ -238,15 +238,16 @@ jobs:
           skipped = sum(1 for t in tests if t["status"] == "SKIPPED")
           total = len(tests)
           rate = (passed / total * 100) if total > 0 else 0
+          print(f"Total={total} Passed={passed} Failed={failed} Errors={errors} Skipped={skipped}")
 
-          # ---- Generate Excel ----
+          # Excel
           wb = openpyxl.Workbook()
-          header_fill = PatternFill(start_color="1e1e2e", end_color="1e1e2e", fill_type="solid")
-          header_font = Font(color="22d3ee", bold=True, size=12)
-          pass_fill = PatternFill(start_color="238636", end_color="238636", fill_type="solid")
-          fail_fill = PatternFill(start_color="da3633", end_color="da3633", fill_type="solid")
-          skip_fill = PatternFill(start_color="6e7681", end_color="6e7681", fill_type="solid")
-          white_font = Font(color="ffffff", size=11)
+          hf = PatternFill(start_color="1e1e2e", end_color="1e1e2e", fill_type="solid")
+          hfont = Font(color="22d3ee", bold=True, size=12)
+          pfill = PatternFill(start_color="238636", end_color="238636", fill_type="solid")
+          ffill = PatternFill(start_color="da3633", end_color="da3633", fill_type="solid")
+          sfill = PatternFill(start_color="6e7681", end_color="6e7681", fill_type="solid")
+          wfont = Font(color="ffffff", size=11)
 
           ws = wb.active
           ws.title = "Dashboard"
@@ -256,127 +257,178 @@ jobs:
           ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
           ws.append([])
           ws.append(["Metric", "Value"])
-          for cell in ws[ws.max_row]:
-              cell.fill = header_fill
-              cell.font = header_font
-          ws.append(["Total Tests", total])
-          ws.append(["Passed", passed])
-          ws.append(["Failed", failed])
-          ws.append(["Errors", errors])
-          ws.append(["Skipped", skipped])
-          ws.append(["Pass Rate", f"{rate:.1f}%"])
+          for cell in ws[ws.max_row]: cell.fill = hf; cell.font = hfont
+          for row in [["Total Tests", total], ["Passed", passed], ["Failed", failed],
+                      ["Errors", errors], ["Skipped", skipped], ["Pass Rate", f"{rate:.1f}%"]]:
+              ws.append(row)
           ws.column_dimensions["A"].width = 30
           ws.column_dimensions["B"].width = 25
 
           ws2 = wb.create_sheet("Test Results")
-          ws2.append(["#", "Test Case", "Suite", "Status", "Duration (s)"])
-          for cell in ws2[1]:
-              cell.fill = header_fill
-              cell.font = header_font
+          ws2.append(["Num", "Test Case", "Suite", "Status", "Duration (s)"])
+          for cell in ws2[1]: cell.fill = hf; cell.font = hfont
           for i, t in enumerate(tests, 1):
               ws2.append([i, t["name"], t["suite"], t["status"], f"{t['time']:.2f}"])
               row = ws2.max_row
               sc = ws2.cell(row, 4)
-              if t["status"] == "PASSED":
-                  sc.fill = pass_fill; sc.font = white_font
-              elif t["status"] in ("FAILED", "ERROR"):
-                  sc.fill = fail_fill; sc.font = white_font
-              else:
-                  sc.fill = skip_fill; sc.font = white_font
-          ws2.column_dimensions["A"].width = 8
+              if t["status"] == "PASSED": sc.fill = pfill; sc.font = wfont
+              elif t["status"] in ("FAILED", "ERROR"): sc.fill = ffill; sc.font = wfont
+              else: sc.fill = sfill; sc.font = wfont
+          for c in ["A","B","C","D","E"]: ws2.column_dimensions[c].width = 22
           ws2.column_dimensions["B"].width = 55
-          ws2.column_dimensions["C"].width = 30
-          ws2.column_dimensions["D"].width = 15
-          ws2.column_dimensions["E"].width = 15
 
           ws3 = wb.create_sheet("Suite Summary")
-          ws3.append(["Suite", "Total", "Passed", "Failed", "Pass Rate"])
-          for cell in ws3[1]:
-              cell.fill = header_fill; cell.font = header_font
+          ws3.append(["Suite", "Total", "Passed", "Failed", "Skipped", "Pass Rate"])
+          for cell in ws3[1]: cell.fill = hf; cell.font = hfont
           suites_data = {}
           for t in tests:
               s = t["suite"]
-              if s not in suites_data: suites_data[s] = {"total": 0, "passed": 0, "failed": 0}
+              if s not in suites_data: suites_data[s] = {"total": 0, "passed": 0, "failed": 0, "skipped": 0}
               suites_data[s]["total"] += 1
               if t["status"] == "PASSED": suites_data[s]["passed"] += 1
-              else: suites_data[s]["failed"] += 1
+              elif t["status"] in ("FAILED", "ERROR"): suites_data[s]["failed"] += 1
+              else: suites_data[s]["skipped"] += 1
           for s, d in sorted(suites_data.items()):
               pr = (d["passed"] / d["total"] * 100) if d["total"] > 0 else 0
-              ws3.append([s, d["total"], d["passed"], d["failed"], f"{pr:.0f}%"])
-          for c in ["A","B","C","D","E"]: ws3.column_dimensions[c].width = 25
+              ws3.append([s, d["total"], d["passed"], d["failed"], d["skipped"], f"{pr:.0f}%"])
+          for c in ["A","B","C","D","E","F"]: ws3.column_dimensions[c].width = 22
 
           wb.save("Appium_Reports/excel/Appium_E2E_Report.xlsx")
-          print(f"Appium Excel report: {total} tests, {passed} passed")
+          print("Excel report saved!")
 
-          # ---- Generate HTML ----
-          html = f"""<!DOCTYPE html>
-          <html><head><title>FlowPay Appium E2E Report</title>
-          <style>
-            body {{ font-family: -apple-system, sans-serif; background: #0d1117; color: #e6edf3; padding: 2rem; }}
-            h1 {{ color: #22d3ee; }} h2 {{ color: #58a6ff; }}
-            table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
-            th {{ background: #1e1e2e; color: #22d3ee; padding: 10px; text-align: left; }}
-            td {{ padding: 8px; border-bottom: 1px solid #30363d; }}
-            .pass {{ color: #3fb950; font-weight: bold; }} .fail {{ color: #f85149; font-weight: bold; }}
-            .skip {{ color: #8b949e; }} .card {{ background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }}
-          </style></head><body>
-          <h1>📱 FlowPay Appium Android E2E Report</h1>
-          <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-          <div class="card"><h2>Summary</h2>
-          <table><tr><th>Total</th><th>Passed</th><th>Failed</th><th>Errors</th><th>Skipped</th><th>Pass Rate</th></tr>
-          <tr><td>{total}</td><td class="pass">{passed}</td><td class="fail">{failed}</td><td class="fail">{errors}</td><td class="skip">{skipped}</td><td>{rate:.1f}%</td></tr></table></div>
-          <div class="card"><h2>Test Results</h2><table><tr><th>#</th><th>Test</th><th>Suite</th><th>Status</th><th>Time</th></tr>"""
-
+          # HTML report
+          rows_html = ""
           for i, t in enumerate(tests, 1):
               cls = "pass" if t["status"] == "PASSED" else "fail" if t["status"] in ("FAILED","ERROR") else "skip"
-              html += f'<tr><td>{i}</td><td>{t["name"]}</td><td>{t["suite"]}</td><td class="{cls}">{t["status"]}</td><td>{t["time"]:.2f}s</td></tr>'
+              rows_html += f'<tr><td>{i}</td><td>{t["name"]}</td><td>{t["suite"]}</td>'
+              rows_html += f'<td class="{cls}">{t["status"]}</td><td>{t["time"]:.2f}s</td></tr>\n'
 
-          html += "</table></div></body></html>"
-          with open("Appium_Reports/html/appium_report.html", "w") as f:
-              f.write(html)
-          print("Appium HTML report generated!")
+          suite_rows = ""
+          for s, d in sorted(suites_data.items()):
+              pr = (d["passed"] / d["total"] * 100) if d["total"] > 0 else 0
+              suite_rows += f'<tr><td>{s}</td><td>{d["total"]}</td>'
+              suite_rows += f'<td class="pass">{d["passed"]}</td>'
+              suite_rows += f'<td class="fail">{d["failed"]}</td>'
+              suite_rows += f'<td class="skip">{d["skipped"]}</td>'
+              suite_rows += f'<td>{pr:.0f}%</td></tr>\n'
+
+          gen_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+          html_parts = [
+              '<!DOCTYPE html><html><head><meta charset="UTF-8">',
+              '<meta name="viewport" content="width=device-width,initial-scale=1.0">',
+              '<title>FlowPay Appium E2E Report</title>',
+              '<style>',
+              'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;',
+              'background:#0d1117;color:#e6edf3;padding:2rem;margin:0}',
+              'h1{color:#22d3ee;font-size:2rem}h2{color:#58a6ff;font-size:1.4rem;margin-top:2rem}',
+              'p{color:#8b949e}',
+              'table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:0.9rem}',
+              'th{background:#1e1e2e;color:#22d3ee;padding:12px 8px;text-align:left;border-bottom:2px solid #30363d}',
+              'td{padding:8px;border-bottom:1px solid #21262d}',
+              'tr:hover{background:#161b22}',
+              '.pass{color:#3fb950;font-weight:bold}.fail{color:#f85149;font-weight:bold}.skip{color:#8b949e}',
+              '.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:1.5rem;margin:1.5rem 0}',
+              '.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin:1rem 0}',
+              '.metric{background:#1e1e2e;border:1px solid #30363d;border-radius:6px;padding:1rem;text-align:center}',
+              '.metric-value{font-size:2rem;font-weight:bold;color:#22d3ee}',
+              '.metric-label{font-size:0.8rem;color:#8b949e;margin-top:0.25rem}',
+              '</style></head><body>',
+              '<h1>📱 FlowPay Appium Android E2E Report</h1>',
+              f'<p>Generated: {gen_time} — Android API Level 33</p>',
+              '<div class="card"><h2>📊 Summary</h2><div class="metrics">',
+              f'<div class="metric"><div class="metric-value">{total}</div><div class="metric-label">Total Tests</div></div>',
+              f'<div class="metric"><div class="metric-value" style="color:#3fb950">{passed}</div><div class="metric-label">Passed</div></div>',
+              f'<div class="metric"><div class="metric-value" style="color:#f85149">{failed}</div><div class="metric-label">Failed</div></div>',
+              f'<div class="metric"><div class="metric-value" style="color:#8b949e">{skipped}</div><div class="metric-label">Skipped</div></div>',
+              f'<div class="metric"><div class="metric-value">{rate:.1f}%</div><div class="metric-label">Pass Rate</div></div>',
+              '</div></div>',
+              '<div class="card"><h2>📋 Suite Summary</h2>',
+              '<table><tr><th>Suite</th><th>Total</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Pass Rate</th></tr>',
+              suite_rows,
+              '</table></div>',
+              f'<div class="card"><h2>🧪 All Test Results ({total} tests)</h2>',
+              '<table><tr><th>#</th><th>Test Case</th><th>Suite</th><th>Status</th><th>Duration</th></tr>',
+              rows_html,
+              '</table></div></body></html>',
+          ]
+          html_content = "".join(html_parts)
+          with open("Appium_Reports/html/appium_report.html", "w", encoding="utf-8") as f:
+              f.write(html_content)
+          print("HTML report saved!")
           PYEOF
 
-      - name: 📋 Publish Summary
+      - name: "📋 Publish Summary"
         if: always()
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # 📱 Appium Android E2E — Test Results
+          python3 - << 'PYEOF'
+          import os, glob, xml.etree.ElementTree as ET
+          tests = []
+          for xf in glob.glob("collected/**/TEST-*.xml", recursive=True):
+              try:
+                  tree = ET.parse(xf)
+                  root = tree.getroot()
+                  for tc in root.findall("testcase"):
+                      if tc.find("failure") is not None: tests.append("failed")
+                      elif tc.find("error") is not None: tests.append("error")
+                      elif tc.find("skipped") is not None: tests.append("skipped")
+                      else: tests.append("passed")
+              except:
+                  pass
+          passed = tests.count("passed")
+          failed = tests.count("failed") + tests.count("error")
+          skipped = tests.count("skipped")
+          total = len(tests) if tests else 400
+          rate = (passed / total * 100) if tests else 0
+          lines = [
+              "# 📱 Appium Android E2E — Test Results\n\n",
+              "## 📊 Test Coverage (400 Tests)\n",
+              "| Suite | Tests |\n",
+              "|-------|-------|\n",
+              "| AuthenticationTests | 40 |\n",
+              "| AuthorizationTests | 30 |\n",
+              "| NavigationTests | 30 |\n",
+              "| UIValidationTests | 40 |\n",
+              "| FormsTests | 40 |\n",
+              "| CRUDTests | 40 |\n",
+              "| InputValidationTests | 40 |\n",
+              "| ErrorHandlingTests | 30 |\n",
+              "| AccessibilityTests | 20 |\n",
+              "| PerformanceSmokeTests | 20 |\n",
+              "| RegressionTests | 50 |\n",
+              "| VulnerabilityTests | 20 |\n",
+              "| Total | 400 |\n\n",
+              "## ✅ Results\n",
+              "| Metric | Value |\n",
+              "|--------|-------|\n",
+              f"| Passed | {passed} |\n",
+              f"| Failed | {failed} |\n",
+              f"| Skipped | {skipped} |\n",
+              f"| Pass Rate | {rate:.1f}% |\n\n",
+              "## 📁 Downloadable Artifacts\n",
+              "- Appium-HTML-Report — Full HTML dashboard\n",
+              "- Appium-Excel-Report — Excel with Dashboard, Results, Suite Summary\n",
+          ]
+          summary = "".join(lines)
+          sf = os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null")
+          with open(sf, "a") as fh:
+              fh.write(summary)
+          print(summary)
+          PYEOF
 
-          ## 📊 Test Coverage (400 Tests)
-          | Suite | Tests |
-          |-------|-------|
-          | AuthenticationTests | 40 |
-          | AuthorizationTests | 30 |
-          | NavigationTests | 30 |
-          | UIValidationTests | 40 |
-          | FormsTests | 40 |
-          | CRUDTests | 40 |
-          | InputValidationTests | 40 |
-          | ErrorHandlingTests | 30 |
-          | AccessibilityTests | 20 |
-          | PerformanceSmokeTests | 20 |
-          | RegressionTests | 50 |
-          | VulnerabilityTests | 20 |
-          | **Total** | **400** |
-
-          ## 📁 Downloadable Artifacts
-          - **Appium-HTML-Report** — Self-contained HTML dashboard
-          - **Appium-Excel-Report** — Excel with Dashboard, Results, Suite Summary
-          EOF
-
-      - name: 📤 Upload HTML Report
+      - name: "📤 Upload HTML Report"
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Appium-HTML-Report
           path: Appium_Reports/html/
           retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: warn
 
-      - name: 📤 Upload Excel Report
+      - name: "📤 Upload Excel Report"
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Appium-Excel-Report
           path: Appium_Reports/excel/
           retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: warn
