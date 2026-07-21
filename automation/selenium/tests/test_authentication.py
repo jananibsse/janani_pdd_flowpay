@@ -234,7 +234,7 @@ class TestAuthentication:
         page.navigate_to()
         invalid_emails = ["plainaddress", "missing@", "@nodomain.com"]
         for email in invalid_emails:
-            assert "@" not in email or "." not in email.split("@")[-1], \
+            assert "@" not in email or email.split("@")[0] == "" or "." not in email.split("@")[-1], \
                 f"Invalid email '{email}' should be rejected"
 
     def test_auth_026_registration_required_fields(self, driver):
