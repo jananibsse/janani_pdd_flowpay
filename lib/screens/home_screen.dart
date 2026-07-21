@@ -1,3 +1,5 @@
+import 'dart:js' as js;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../models/wallet_transaction.dart';
@@ -128,6 +130,67 @@ class _HomeScreenState extends State<HomeScreen> {
     _pendingAddMoneyAmount = null;
   }
 
+  void _handleWebPaymentSuccess(String paymentId) async {
+    if (_pendingAddMoneyUid == null || _pendingAddMoneyAmount == null) return;
+    
+    setState(() => _isAddingMoney = true);
+    try {
+      await widget.walletService.recordRazorpayTransaction(
+        uid: _pendingAddMoneyUid!,
+        amount: _pendingAddMoneyAmount!,
+        status: 'success',
+        razorpayPaymentId: paymentId,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully added ₹${_pendingAddMoneyAmount!.toStringAsFixed(2)}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update wallet transaction.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isAddingMoney = false);
+      }
+      _pendingAddMoneyUid = null;
+      _pendingAddMoneyAmount = null;
+    }
+  }
+
+  void _handleWebPaymentError(String message) async {
+    if (_pendingAddMoneyUid == null || _pendingAddMoneyAmount == null) return;
+
+    try {
+      await widget.walletService.recordRazorpayTransaction(
+        uid: _pendingAddMoneyUid!,
+        amount: _pendingAddMoneyAmount!,
+        status: 'failed',
+      );
+    } catch (e) {
+      debugPrint('Error recording failed payment: $e');
+    }
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Payment failed: $message'),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    _pendingAddMoneyUid = null;
+    _pendingAddMoneyAmount = null;
+  }
+
   void _handleExternalWallet(ExternalWalletResponse response) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -231,15 +294,32 @@ class _HomeScreenState extends State<HomeScreen> {
     _pendingAddMoneyUid = uid;
     _pendingAddMoneyAmount = amount;
 
-    try {
-      _razorpay.open(options);
-    } catch (e) {
-      debugPrint('Error opening Razorpay: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to open payment gateway.')),
-      );
-      _pendingAddMoneyUid = null;
-      _pendingAddMoneyAmount = null;
+    if (kIsWeb) {
+      try {
+        js.context.callMethod('payWithRazorpay', [
+          js.JsObject.jsify(options),
+          (paymentId) {
+            _handleWebPaymentSuccess(paymentId.toString());
+          },
+          (errorMsg) {
+            _handleWebPaymentError(errorMsg.toString());
+          }
+        ]);
+      } catch (e) {
+        debugPrint('Error calling JS Razorpay: $e');
+        _handleWebPaymentError(e.toString());
+      }
+    } else {
+      try {
+        _razorpay.open(options);
+      } catch (e) {
+        debugPrint('Error opening Razorpay: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to open payment gateway.')),
+        );
+        _pendingAddMoneyUid = null;
+        _pendingAddMoneyAmount = null;
+      }
     }
   }
 
