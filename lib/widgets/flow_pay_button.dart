@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'animated_button.dart';
+import 'app_theme.dart';
+
 class FlowPayButton extends StatelessWidget {
   const FlowPayButton({
     super.key,
     required this.label,
     required this.onPressed,
-    this.backgroundColor = Colors.cyanAccent,
-    this.foregroundColor = Colors.black,
+    this.backgroundColor = AppColors.purpleAccent,
+    this.foregroundColor = Colors.white,
     this.isLoading = false,
   });
 
@@ -18,23 +21,28 @@ class FlowPayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: foregroundColor,
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-      ),
-      onPressed: isLoading ? null : onPressed,
-      child: isLoading
-          ? SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: foregroundColor,
-              ),
-            )
-          : Text(label),
+    // Use gradient based on the requested background color
+    final LinearGradient gradient;
+    if (backgroundColor == AppColors.cyanAccent ||
+        backgroundColor == Colors.cyanAccent) {
+      gradient = AppTheme.cyanGradient;
+    } else if (backgroundColor == AppColors.purpleAccent ||
+        backgroundColor == Colors.purpleAccent) {
+      gradient = AppTheme.primaryGradient;
+    } else {
+      gradient = LinearGradient(
+        colors: [backgroundColor, backgroundColor],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    }
+
+    return AnimatedGradientButton(
+      label: label,
+      onPressed: onPressed,
+      gradient: gradient,
+      foregroundColor: foregroundColor,
+      isLoading: isLoading,
     );
   }
 }

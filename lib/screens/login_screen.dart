@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/wallet_service.dart';
+import '../widgets/animated_button.dart';
 import '../widgets/app_theme.dart';
-import '../widgets/flow_pay_button.dart';
+import '../widgets/aurora_background.dart';
+import '../widgets/glass_card.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,7 +23,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -30,19 +33,41 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  late final AnimationController _entryController;
+  late final Animation<double> _entryFade;
+  late final Animation<Offset> _entrySlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..forward();
+
+    _entryFade = CurvedAnimation(
+      parent: _entryController,
+      curve: Curves.easeOut,
+    );
+    _entrySlide = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _entryController, curve: Curves.easeOutCubic),
+    );
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
+    _entryController.dispose();
     super.dispose();
   }
 
   Future<void> _signIn() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     try {
@@ -56,14 +81,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final firebaseUser = credential.user;
       if (firebaseUser != null) {
-        var wallet = await widget.walletService.watchWallet(firebaseUser.uid).first;
+        var wallet =
+            await widget.walletService.watchWallet(firebaseUser.uid).first;
         if (wallet == null) {
           await widget.walletService.createUserWallet(
             uid: firebaseUser.uid,
             email: email,
             phone: phone,
           );
-          wallet = await widget.walletService.watchWallet(firebaseUser.uid).first;
+          wallet =
+              await widget.walletService.watchWallet(firebaseUser.uid).first;
         }
         if (wallet == null || wallet.phone != phone) {
           await widget.authService.signOut();
@@ -71,27 +98,19 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
 
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (error) {
       _showError(widget.authService.messageForAuthException(error));
     } catch (error) {
       _showError('Sign in failed: ${error.toString()}');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showError(String message) {
-    if (!mounted) {
-      return;
-    }
-
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -101,123 +120,184 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.white,
-        title: const Text('Login'),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Welcome back',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
+      body: AuroraBackground(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: AppTheme.pagePadding(context),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: AppTheme.contentMaxWidth(context),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Sign in with your FlowPay account',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('Email', Icons.email_outlined),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Enter your email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  autocorrect: false,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('Phone Number', Icons.phone_outlined),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Enter your phone number';
-                    }
-                    if (value.trim().length < 10) {
-                      return 'Enter a valid phone number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration(
-                    'Password',
-                    Icons.lock_outline,
-                  ).copyWith(
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: Colors.white54,
-                      ),
-                      onPressed: () {
-                        setState(() => _obscurePassword = !_obscurePassword);
-                      },
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Enter your password';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-                FlowPayButton(
-                  label: 'Sign In',
-                  backgroundColor: AppColors.purpleAccent,
-                  foregroundColor: Colors.white,
-                  isLoading: _isLoading,
-                  onPressed: _signIn,
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => RegisterScreen(
-                          authService: widget.authService,
-                          walletService: widget.walletService,
+                child: FadeTransition(
+                  opacity: _entryFade,
+                  child: SlideTransition(
+                    position: _entrySlide,
+                    child: GlassCard(
+                      padding: const EdgeInsets.all(32),
+                      borderRadius: 28,
+                      glowColor: AppColors.cyanAccent,
+                      glowStrength: 0.18,
+                      blurSigma: 22,
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildHeader(),
+                            const SizedBox(height: 32),
+                            _buildEmailField(),
+                            const SizedBox(height: 16),
+                            _buildPhoneField(),
+                            const SizedBox(height: 16),
+                            _buildPasswordField(),
+                            const SizedBox(height: 32),
+                            AnimatedGradientButton(
+                              label: 'Sign In',
+                              gradient: AppTheme.primaryGradient,
+                              icon: Icons.login_rounded,
+                              isLoading: _isLoading,
+                              onPressed: _isLoading ? null : _signIn,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildRegisterLink(context),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                  child: const Text(
-                    'Need an account? Register',
-                    style: TextStyle(color: AppColors.cyanAccent),
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [Colors.white, Color(0xFFB0B8D4)],
+          ).createShader(bounds),
+          child: const Text(
+            'Welcome back',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Sign in with your FlowPay account',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmailField() {
+    return TextFormField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
+      autocorrect: false,
+      style: const TextStyle(color: Colors.white),
+      decoration: _inputDecoration('Email', Icons.email_outlined),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) return 'Enter your email';
+        if (!value.contains('@')) return 'Enter a valid email';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPhoneField() {
+    return TextFormField(
+      controller: _phoneController,
+      keyboardType: TextInputType.phone,
+      autocorrect: false,
+      style: const TextStyle(color: Colors.white),
+      decoration: _inputDecoration('Phone Number', Icons.phone_outlined),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Enter your phone number';
+        }
+        if (value.trim().length < 10) return 'Enter a valid phone number';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      style: const TextStyle(color: Colors.white),
+      decoration: _inputDecoration('Password', Icons.lock_outline).copyWith(
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscurePassword
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+            color: Colors.white38,
+            size: 20,
+          ),
+          onPressed: () =>
+              setState(() => _obscurePassword = !_obscurePassword),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) return 'Enter your password';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildRegisterLink(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, animation, __) => RegisterScreen(
+              authService: widget.authService,
+              walletService: widget.walletService,
+            ),
+            transitionsBuilder: (_, animation, __, child) => FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+            transitionDuration: const Duration(milliseconds: 350),
+          ),
+        );
+      },
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: RichText(
+          text: TextSpan(
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 14,
+            ),
+            children: const [
+              TextSpan(text: "Need an account? "),
+              TextSpan(
+                text: 'Register',
+                style: TextStyle(
+                  color: AppColors.cyanAccent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -227,22 +307,27 @@ class _LoginScreenState extends State<LoginScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white70),
-      prefixIcon: Icon(icon, color: Colors.white54),
+      labelStyle: TextStyle(
+        color: Colors.white.withValues(alpha: 0.45),
+        fontSize: 14,
+      ),
+      prefixIcon: Icon(icon, color: Colors.white.withValues(alpha: 0.35), size: 20),
+      filled: true,
+      fillColor: Colors.white.withValues(alpha: 0.05),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.white24),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.cyanAccent),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.cyanAccent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
     );
