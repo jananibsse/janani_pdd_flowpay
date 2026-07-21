@@ -200,6 +200,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                     maxWidth: AppTheme.contentMaxWidth(context),
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
                         child: Padding(
