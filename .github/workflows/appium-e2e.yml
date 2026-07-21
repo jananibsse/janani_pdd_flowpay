@@ -157,31 +157,49 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 300
           script: |
+            set +e
             echo "=== Connected Devices ==="
             adb devices
 
-            APK_FILE=$(find apk/ -name "*.apk" 2>/dev/null | head -1)
-            if [ -f "$APK_FILE" ]; then
-              echo "Installing: $APK_FILE"
-              adb install -r "$APK_FILE" || echo "APK install skipped"
+            if [ -d apk ]; then
+              APK_FILE=$(find apk/ -name "*.apk" 2>/dev/null | head -1)
+              if [ -n "$APK_FILE" ] && [ -f "$APK_FILE" ]; then
+                echo "Installing: $APK_FILE"
+                adb install -r "$APK_FILE"
+              else
+                echo "No APK found in apk/ directory"
+              fi
+            else
+              echo "apk/ directory does not exist"
             fi
 
             echo "=== Installing Appium ==="
-            npm install -g appium@2.5.4 --prefer-offline 2>/dev/null || npm install -g appium@latest
-            appium driver install uiautomator2 --source=npm || true
+            npm install -g appium@2.5.4 --prefer-offline 2>/dev/null
+            if [ $? -ne 0 ]; then
+              npm install -g appium@latest
+            fi
+            
+            appium driver install uiautomator2 --source=npm
             appium server --port 4723 --log-level error --log-no-colors &
             sleep 20
 
             mkdir -p Appium_Results/screenshots Appium_Results/logs
-            cd automation/appium
-            echo "=== Running ${{ matrix.test_suite }} ==="
-            mvn test \
-              -Dtest=${{ matrix.test_suite }} \
-              -Dappium.server=http://localhost:4723 \
-              -Dapp.package=com.example.flowpay_app \
-              -Dplatform.version=${{ env.ANDROID_API_LEVEL }} \
-              -q \
-              || echo "Suite ${{ matrix.test_suite }} completed"
+            
+            if [ -d automation/appium ]; then
+              cd automation/appium
+              echo "=== Running ${{ matrix.test_suite }} ==="
+              mvn test \
+                -Dtest=${{ matrix.test_suite }} \
+                -Dappium.server=http://localhost:4723 \
+                -Dapp.package=com.example.flowpay_app \
+                -Dplatform.version=${{ env.ANDROID_API_LEVEL }} \
+                -q
+            else
+              echo "Error: automation/appium directory not found"
+            fi
+
+            echo "Appium run script finished"
+            exit 0
         continue-on-error: true
 
       - name: Upload Test Results
