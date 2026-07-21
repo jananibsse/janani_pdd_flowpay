@@ -64,7 +64,9 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
     super.initState();
     _receiverLocked = widget.receiverUid != null && widget.receiverPhone != null;
     if (widget.receiverPhone != null) {
-      _phoneController.text = widget.receiverPhone!;
+      _phoneController.text = widget.receiverPhone!.isNotEmpty
+          ? widget.receiverPhone!
+          : (widget.receiverEmail ?? 'QR Code Payee');
     }
     
     if (_receiverLocked) {
@@ -306,6 +308,7 @@ class _SendMoneyScreenState extends State<SendMoneyScreen> {
                                         : null,
                               ),
                               validator: (value) {
+                                if (_receiverLocked) return null;
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Enter receiver phone number';
                                 }

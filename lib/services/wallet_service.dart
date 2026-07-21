@@ -35,7 +35,7 @@ class WalletService {
   static const String userTransactionsCollection = 'transactions';
   static const String paymentTransactionsCollection = 'transactions';
   static const String offlineTransactionsCollection = 'offline_transactions';
-  static const double initialBalance = 1000;
+  static const double initialBalance = 0;
 
   final FirebaseFirestore? _firestoreOverride;
   FirebaseFirestore? _firestore;

@@ -82,11 +82,11 @@ void main() {
   // ─── WALLET CREATION (TC_WAL_001–020) ─────────────────
 
   group('WalletService — Wallet Creation', () {
-    test('TC_WAL_001 — createUserWallet creates doc with initial balance 1000', () async {
+    test('TC_WAL_001 — createUserWallet creates doc with initial balance 0', () async {
       await ws.createUserWallet(uid: 'w1', email: 'w1@t.com', phone: '111');
       final doc = await fakeFirestore.collection('users').doc('w1').get();
       expect(doc.exists, true);
-      expect(doc.data()?['balance'], 1000.0);
+      expect(doc.data()?['balance'], 0.0);
     });
 
     test('TC_WAL_002 — createUserWallet stores email', () async {
@@ -123,14 +123,14 @@ void main() {
       await ws.ensureWalletExists(uid: 'e7', email: 'e7@t.com');
       final doc = await fakeFirestore.collection('users').doc('e7').get();
       expect(doc.exists, true);
-      expect(doc.data()?['balance'], 1000.0);
+      expect(doc.data()?['balance'], 0.0);
     });
 
     test('TC_WAL_008 — ensureWalletExists does not overwrite existing wallet', () async {
-      Future<String> createWalletHelper({double initialBalance = 1000}) async {
+      Future<String> createWalletHelper({double initialBalance = 0}) async {
         await ws.ensureWalletExists(uid: 'e8', email: 'e8@t.com');
-        if (initialBalance != 1000) {
-          await ws.addMoney(uid: 'e8', amount: initialBalance - 1000);
+        if (initialBalance != 0) {
+          await ws.addMoney(uid: 'e8', amount: initialBalance - 0);
         }
         return 'e8';
       }
@@ -174,8 +174,8 @@ void main() {
       expect(id, 'u14');
     });
 
-    test('TC_WAL_015 — initialBalance constant is 1000', () {
-      expect(WalletService.initialBalance, 1000);
+    test('TC_WAL_015 — initialBalance constant is 0', () {
+      expect(WalletService.initialBalance, 0);
     });
 
     test('TC_WAL_016 — usersCollection constant is users', () {

@@ -169,61 +169,61 @@ class PersonalQrScreen extends StatelessWidget {
                                       // QR Display
                                       if (phone.isEmpty) ...[
                                         Container(
-                                          padding: const EdgeInsets.all(16),
+                                          padding: const EdgeInsets.all(12),
+                                          margin: const EdgeInsets.only(bottom: 16),
                                           decoration: BoxDecoration(
-                                            color: Colors.redAccent.withValues(alpha: 0.15),
+                                            color: Colors.amber.withValues(alpha: 0.15),
                                             borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                                            border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                                           ),
                                           child: const Text(
-                                            'Please link a phone number to your profile in settings to generate your personal payment QR code.',
-                                            style: TextStyle(color: Colors.white70, fontSize: 13),
+                                            'Note: Link a phone number to your profile in settings for phone-number based searches.',
+                                            style: TextStyle(color: Colors.white70, fontSize: 12),
                                             textAlign: TextAlign.center,
                                           ),
                                         ),
-                                      ] else ...[
-                                        Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(16),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppColors.cyanAccent.withValues(alpha: 0.15),
-                                                blurRadius: 20,
-                                                spreadRadius: 2,
-                                              )
-                                            ]
-                                          ),
-                                          child: QrImageView(
-                                            data: encodedData,
-                                            version: QrVersions.auto,
-                                            size: MediaQuery.sizeOf(context).width >= 600
-                                                ? 260
-                                                : 200,
-                                            eyeStyle: const QrEyeStyle(
-                                              eyeShape: QrEyeShape.square,
-                                              color: Colors.black,
-                                            ),
-                                            dataModuleStyle: const QrDataModuleStyle(
-                                              dataModuleShape: QrDataModuleShape.square,
-                                              color: Colors.black,
-                                            ),
-                                            backgroundColor: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        const Text(
-                                          'Scan to transfer money using FlowPay Wallet',
-                                          style: TextStyle(
-                                            color: AppColors.cyanAccent,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 0.5,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
                                       ],
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(16),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.cyanAccent.withValues(alpha: 0.15),
+                                              blurRadius: 20,
+                                              spreadRadius: 2,
+                                            )
+                                          ]
+                                        ),
+                                        child: QrImageView(
+                                          data: encodedData,
+                                          version: QrVersions.auto,
+                                          size: MediaQuery.sizeOf(context).width >= 600
+                                              ? 260
+                                              : 200,
+                                          eyeStyle: const QrEyeStyle(
+                                            eyeShape: QrEyeShape.square,
+                                            color: Colors.black,
+                                          ),
+                                          dataModuleStyle: const QrDataModuleStyle(
+                                            dataModuleShape: QrDataModuleShape.square,
+                                            color: Colors.black,
+                                          ),
+                                          backgroundColor: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        'Scan to transfer money using FlowPay Wallet',
+                                        style: TextStyle(
+                                          color: AppColors.cyanAccent,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
                                     ],
                                   ),
                                 ),
